@@ -1,5 +1,5 @@
 // Aba Relatórios: desempenho da produção, ocorrências, qualidade, materiais e FAs por período.
-import { html, cabecalho, botao, busca, filtro, vazio, rodape, delegar, stat } from '../core/ui.js';
+import { html, cabecalho, botao, busca, filtro, vazio, delegar, stat } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { unicos, numero } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
@@ -59,5 +59,5 @@ export default {
     });
   },
   onUnmount() { desligar?.(); },
-  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`); },
+  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`); },
 };

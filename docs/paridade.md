@@ -68,7 +68,7 @@ arquivo único `dist/simulflow.html` aberto por `file://`.
 
 | Código | Situação | Observação |
 |---|---|---|
-| NAV-01 | 🔁 | Menu vem de `config/abas.json`. Ordem: Início, Dashboard, Programação, PCP, Produção, Projetos/Obras, Almoxarifado, Qualidade, Notificações, Histórico, Relatórios, Configurações, Usuários |
+| NAV-01 | 🔁 | Menu vem de `config/abas.json`. Ordem: Dashboard (Início e Dashboard unificados), Programação, PCP, Presença operacional, Produção, Projetos/Obras, Almoxarifado, Qualidade, Histórico, Relatórios, Configurações, Usuários. Notificações só pelo sino |
 | NAV-02 | 🔁 | Item aparece com “ver” ou “editar” na aba; abas com `perfis: ["host"]` só para host |
 | NAV-03 | ✅ | Marca, “ÁREA DE TRABALHO”, “Setores conectados”, versão |
 | NAV-04 | ✅ | Contador de não lidas no menu e ponto no sino |
@@ -77,7 +77,7 @@ arquivo único `dist/simulflow.html` aberto por `file://`.
 | NAV-07 | 🔁 | Busca geral também encontra FAs e itens (antes só OPs) |
 | NAV-08 | 🔁 | Iniciais, nome, área/host, **Alterar minha senha**, sair |
 | NAV-09 | ➖ | Seletor “Área de trabalho” era só visual (não mudava nada); a área agora é do cadastro do usuário |
-| NAV-10 | 🔁 | Rodapé diz “Dados locais deste navegador” |
+| NAV-10 | ➖ | Rodapé removido de todas as abas, a pedido |
 | NAV-11 | ✅ | “Acesso não autorizado” dentro do shell |
 | NAV-12 | ✅ | Busca sem acento/maiúsculas, vários termos (`combinaTexto`) |
 | AUT-01 | 🔁 | Login por **usuário** (o host é `simulflow2-40@gmail.com`); olho para mostrar senha |

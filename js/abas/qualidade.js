@@ -1,6 +1,6 @@
 // Aba Qualidade: inspeções de OPs, laudos de itens e acompanhamento de ensaios (execução, NII, NIII).
 // Rotas: #/qualidade/inspecoes · #/qualidade/laudos · #/qualidade/ensaios
-import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, busca, filtro, alternar, vazio, rodape, delegar, stat } from '../core/ui.js';
+import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, busca, filtro, alternar, vazio, delegar, stat } from '../core/ui.js';
 import { data, combinaTexto, hoje, numero } from '../core/util.js';
 import { controleEstado, abrirHistorico, nomeUsuario } from '../componentes/comuns.js';
 import { botoesItem, cliquesItem, badgeLaudo } from '../componentes/item-acoes.js';
@@ -166,6 +166,6 @@ export default {
   render(el, ctx) {
     const [secao = 'inspecoes'] = ctx.params;
     const corpo = secao === 'ensaios' ? viewEnsaios(ctx) : secao === 'laudos' ? viewLaudos(ctx) : viewInspecoes(ctx);
-    el.innerHTML = String(html`<main class="page">${subabas([['inspecoes', 'Inspeções de OPs', 'shield'], ['laudos', 'Laudos de itens', 'clipboard'], ['ensaios', 'Ensaios', 'flask']], secao, 'qualidade')}${corpo}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['inspecoes', 'Inspeções de OPs', 'shield'], ['laudos', 'Laudos de itens', 'clipboard'], ['ensaios', 'Ensaios', 'flask']], secao, 'qualidade')}${corpo}</main>`);
   },
 };

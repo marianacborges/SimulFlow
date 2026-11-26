@@ -1,6 +1,6 @@
 // Aba Dashboard (Início): resumo de OPs e FAs por status e atrasos, alertas e últimas movimentações e,
 // logo abaixo, o acompanhamento da programação com filtros recolhidos (componentes/painel-programacao.js).
-import { html, cabecalho, stat, badge, vazio, rodape, delegar, botao } from '../core/ui.js';
+import { html, cabecalho, stat, badge, vazio, delegar, botao } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, hoje } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
@@ -81,7 +81,7 @@ export default {
   onUnmount() { desligar?.(); desligarProgramacao?.(); },
   render(el, ctx) {
     const restaurar = lembrarListasAbertas(el);
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${secaoProgramacao(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${view(ctx)}${secaoProgramacao(ctx)}</main>`);
     restaurar();
   },
 };

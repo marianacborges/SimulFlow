@@ -1,6 +1,6 @@
 // Aba PCP: Ordens de Produção (OPs) e Frentes/Ações (FAs).
 // Rotas: #/pcp/ops · #/pcp/op/<id> · #/pcp/fas · #/pcp/fa/<id>
-import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, busca, filtro, vazio, stat, rodape, delegar, progresso } from '../core/ui.js';
+import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, busca, filtro, vazio, stat, delegar, progresso } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, dataHora, hora, combinaTexto, hoje } from '../core/util.js';
 import { tabelaOPs, cliquesOP, badgeOP, progressoDaOP, formOP } from '../componentes/op-acoes.js';
@@ -203,7 +203,7 @@ export default {
     const [secao = 'ops', id] = ctx.params;
     const atual = secao === 'op' ? 'ops' : secao === 'fa' ? 'fas' : secao;
     const corpo = secao === 'op' ? viewOP(ctx, id) : secao === 'fas' ? viewFAs(ctx) : secao === 'fa' ? viewFA(ctx, id) : viewOPs(ctx);
-    el.innerHTML = String(html`<main class="page">${subabas([['ops', 'Ordens de Produção', 'clipboard'], ['fas', 'FAs (frentes/ações)', 'workflow']], atual, 'pcp')}${corpo}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['ops', 'Ordens de Produção', 'clipboard'], ['fas', 'FAs (frentes/ações)', 'workflow']], atual, 'pcp')}${corpo}</main>`);
   },
 };
 

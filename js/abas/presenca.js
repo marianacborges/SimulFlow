@@ -1,7 +1,7 @@
 // Aba "Presença operacional": conta os colaboradores presentes no dia (leitura de tag NFC pelo celular),
 // com os dados numa planilha Google (Apps Script). Rotas:
 //   #/presenca/planilha · #/presenca/leitura · #/presenca/colaboradores · #/presenca/historico[/AAAA-MM-DD] · #/presenca/conexao
-import { html, raw, cabecalho, subabas, botao, badge, campo, seletor, modal, janela, toast, confirmar, busca, filtro, vazio, rodape, delegar, stat, ic } from '../core/ui.js';
+import { html, raw, cabecalho, subabas, botao, badge, campo, seletor, modal, janela, toast, confirmar, busca, filtro, vazio, delegar, stat, ic } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { combinaTexto } from '../core/util.js';
 import { baixar } from '../core/exportar.js';
@@ -401,7 +401,7 @@ export default {
     else if (secao === 'historico') corpo = viewHistorico(ctx, param);
     else corpo = viewPlanilha(ctx);
     if (secao !== 'leitura') desmontarLeitor();
-    el.innerHTML = String(html`<main class="page">${subabas([['planilha', 'Planilha do dia', 'clipboard'], ['leitura', 'Leitura', 'nfc'], ['colaboradores', 'Colaboradores', 'users'], ['historico', 'Histórico', 'history'], ['conexao', 'Conexão', 'link']], secao, 'presenca')}${corpo}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['planilha', 'Planilha do dia', 'clipboard'], ['leitura', 'Leitura', 'nfc'], ['colaboradores', 'Colaboradores', 'users'], ['historico', 'Histórico', 'history'], ['conexao', 'Conexão', 'link']], secao, 'presenca')}${corpo}</main>`);
     if (secao === 'leitura' && con) anexarLeitor(el);
   },
 };

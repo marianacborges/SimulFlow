@@ -2,7 +2,7 @@
 // Contrato: export default { id, titulo, render(container, ctx), onMount?, onUnmount? }
 // ctx: { usuario, store, acoes, pode(aba, editar), regra(nome, ...), host, params, query, rerender(), navegar(hash) }
 // Leitura: ctx.store.todos('<colecao>') · Gravação: sempre por ctx.acoes.<modulo>.<acao>({...}) (valida, audita e persiste).
-import { html, cabecalho, botao, vazio, rodape, delegar, busca, toast } from '../core/ui.js';
+import { html, cabecalho, botao, vazio, delegar, busca, toast } from '../core/ui.js';
 import { combinaTexto } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
 
@@ -31,6 +31,6 @@ export default {
   },
   onUnmount() { desligar?.(); },
   render(el, ctx) {
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`);
   },
 };

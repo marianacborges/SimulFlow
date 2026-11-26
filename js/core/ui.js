@@ -115,10 +115,6 @@ export function paginacao(total, pagina, tamanho, k = 'pagina') {
     ${botao('', { acao: 'pagina', dados: { k, p: atual + 1 }, v: 'outline', tam: 'icon', icone: 'chevronRight', desab: atual >= paginas, titulo: 'Próxima página' })}</div></div>`;
 }
 
-export function rodape() {
-  return html`<footer class="page-footer"><span>SimulFlow · Acompanhamento inteligente da produção</span><span><i class="live-dot"></i> Dados locais deste navegador</span></footer>`;
-}
-
 // ---------- Toast ----------
 
 export function toast(msg, tipo = 'ok') {

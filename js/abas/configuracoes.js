@@ -1,6 +1,6 @@
 // Aba Configurações (somente host): limites de ensaio, políticas de observação, etapas/responsáveis,
 // escopo das etapas, dados (exportar/importar JSON, limpar dados), aparência e abas registradas.
-import { html, raw, ic, cabecalho, botao, campo, seletor, modal, toast, confirmar, vazio, rodape, delegar, badge } from '../core/ui.js';
+import { html, raw, ic, cabecalho, botao, campo, seletor, modal, toast, confirmar, vazio, delegar, badge } from '../core/ui.js';
 import { TEMAS, temaEscolhido, definirTema } from '../core/tema.js';
 import { config } from '../core/config.js';
 import { dataHora } from '../core/util.js';
@@ -148,5 +148,5 @@ export default {
     desligar = () => { antes(); el.removeEventListener('change', muda); };
   },
   onUnmount() { desligar?.(); },
-  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`); },
+  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`); },
 };

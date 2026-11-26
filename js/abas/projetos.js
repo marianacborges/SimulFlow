@@ -1,6 +1,6 @@
 // Aba Projetos/Obras: obras, sub-projetos, ocultar/arquivar, pedidos (contrato aditivado) e itens.
 // Rotas: #/projetos · #/projetos/obra/<id> · #/projetos/pedido/<id> · #/projetos/ops
-import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, confirmar, busca, alternar, vazio, rodape, delegar, progresso, filtro } from '../core/ui.js';
+import { html, cabecalho, subabas, botao, badge, campo, seletor, modal, toast, confirmar, busca, alternar, vazio, delegar, progresso, filtro } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, combinaTexto, hoje } from '../core/util.js';
 import { controleEstado, formCamposExtras, mostrarCamposExtras, abrirHistorico } from '../componentes/comuns.js';
@@ -211,7 +211,7 @@ export default {
   render(el, ctx) {
     const [secao = '', id] = ctx.params;
     const corpo = secao === 'obra' ? viewObra(ctx, id) : secao === 'pedido' ? viewPedido(ctx, id) : secao === 'ops' ? viewVinculadas(ctx) : viewLista(ctx);
-    el.innerHTML = String(html`<main class="page">${subabas([['lista', 'Projetos/Obras', 'folder'], ['ops', 'Ordens vinculadas', 'clipboard']], secao === 'ops' ? 'ops' : 'lista', 'projetos')}${corpo}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['lista', 'Projetos/Obras', 'folder'], ['ops', 'Ordens vinculadas', 'clipboard']], secao === 'ops' ? 'ops' : 'lista', 'projetos')}${corpo}</main>`);
     if (ctx.query?.item && ctx.query.item !== rolado) { rolado = ctx.query.item; el.querySelector(`#item-${CSS.escape(ctx.query.item)}`)?.scrollIntoView({ block: 'center' }); }
   },
 };

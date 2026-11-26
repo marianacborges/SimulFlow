@@ -1,5 +1,5 @@
 // Aba Almoxarifado: materiais, movimentações de estoque, solicitações da produção e consumo por item.
-import { html, cabecalho, botao, badge, campo, seletor, modal, toast, busca, filtro, vazio, rodape, delegar, stat } from '../core/ui.js';
+import { html, cabecalho, botao, badge, campo, seletor, modal, toast, busca, filtro, vazio, delegar, stat } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, combinaTexto, unicos, numero } from '../core/util.js';
 import { controleEstado, formCamposExtras } from '../componentes/comuns.js';
@@ -102,6 +102,6 @@ export default {
   },
   onUnmount() { desligar?.(); },
   render(el, ctx) {
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`);
   },
 };

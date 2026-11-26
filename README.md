@@ -112,12 +112,12 @@ acesso em **Usuários e permissões**.
 
 1. Crie `js/abas/<id>.js`:
    ```js
-   import { html, cabecalho, rodape } from '../core/ui.js';
+   import { html, cabecalho } from '../core/ui.js';
    export default {
      id: 'minha-aba',
      titulo: 'Minha aba',
      render(container, ctx) {
-       container.innerHTML = String(html`<main class="page">${cabecalho('Minha aba', 'Descrição')}${rodape()}</main>`);
+       container.innerHTML = String(html`<main class="page">${cabecalho('Minha aba', 'Descrição')}</main>`);
      },
      onMount(container, ctx) { /* ligar eventos (opcional) */ },
      onUnmount(container, ctx) { /* desligar (opcional) */ },

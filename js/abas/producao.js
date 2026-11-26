@@ -1,6 +1,6 @@
 // Aba Produção: etapas/frentes de trabalho (Soldagem, Montagem, Pintura…) com responsável, e itens por etapa.
 // Rotas: #/producao/etapas · #/producao/ops
-import { html, cabecalho, subabas, botao, badge, toast, busca, filtro, alternar, vazio, rodape, delegar, progresso } from '../core/ui.js';
+import { html, cabecalho, subabas, botao, badge, toast, busca, filtro, alternar, vazio, delegar, progresso } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hoje } from '../core/util.js';
 import { controleEstado, abrirHistorico } from '../componentes/comuns.js';
@@ -101,6 +101,6 @@ export default {
   onUnmount() { desligar?.(); },
   render(el, ctx) {
     const [secao = 'etapas'] = ctx.params;
-    el.innerHTML = String(html`<main class="page">${subabas([['etapas', 'Itens por etapa', 'factory'], ['ops', 'Ordens de produção', 'clipboard']], secao, 'producao')}${secao === 'ops' ? viewOPs(ctx) : viewQuadro(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['etapas', 'Itens por etapa', 'factory'], ['ops', 'Ordens de produção', 'clipboard']], secao, 'producao')}${secao === 'ops' ? viewOPs(ctx) : viewQuadro(ctx)}</main>`);
   },
 };

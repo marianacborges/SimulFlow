@@ -1,6 +1,6 @@
 // Aba Histórico: rastreabilidade das movimentações entre setores e auditoria completa.
 // Rotas: #/historico/movimentacoes · #/historico/auditoria
-import { html, cabecalho, subabas, botao, busca, filtro, vazio, rodape, delegar, paginacao } from '../core/ui.js';
+import { html, cabecalho, subabas, botao, busca, filtro, vazio, delegar, paginacao } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, dataHora, combinaTexto, unicos } from '../core/util.js';
 import { controleEstado, diferencas } from '../componentes/comuns.js';
@@ -75,6 +75,6 @@ export default {
     const q = ctx.query?.q || '';
     if (q !== ultimaQuery) { ultimaQuery = q; if (q) estado.mov.busca = q; }
     const [secao = 'movimentacoes'] = ctx.params;
-    el.innerHTML = String(html`<main class="page">${subabas([['movimentacoes', 'Movimentações', 'history'], ['auditoria', 'Auditoria completa', 'lock']], secao, 'historico')}${secao === 'auditoria' ? viewAud(ctx) : viewMov(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['movimentacoes', 'Movimentações', 'history'], ['auditoria', 'Auditoria completa', 'lock']], secao, 'historico')}${secao === 'auditoria' ? viewAud(ctx) : viewMov(ctx)}</main>`);
   },
 };

@@ -1,5 +1,5 @@
 // Aba Usuários e permissões (somente host): cadastro, área, funções, acesso por aba, obras do Dashboard e senhas.
-import { html, cabecalho, botao, badge, campo, seletor, modal, toast, vazio, rodape, delegar, busca } from '../core/ui.js';
+import { html, cabecalho, botao, badge, campo, seletor, modal, toast, vazio, delegar, busca } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { combinaTexto } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
@@ -76,5 +76,5 @@ export default {
     });
   },
   onUnmount() { desligar?.(); },
-  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`); },
+  render(el, ctx) { el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`); },
 };

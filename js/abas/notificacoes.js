@@ -1,5 +1,5 @@
 // Aba Notificações: comunicação entre setores e acompanhamento das providências.
-import { html, cabecalho, botao, badge, campo, modal, toast, busca, filtro, vazio, rodape, delegar } from '../core/ui.js';
+import { html, cabecalho, botao, badge, campo, modal, toast, busca, filtro, vazio, delegar } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, combinaTexto, unicos } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
@@ -67,6 +67,6 @@ export default {
   render(el, ctx) {
     const q = ctx.query?.q || '';
     if (q !== ultimaQuery) { ultimaQuery = q; if (q) estado.f.busca = q; }
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${view(ctx)}</main>`);
   },
 };

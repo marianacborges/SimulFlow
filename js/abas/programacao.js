@@ -1,6 +1,6 @@
 // Aba Programação: atingimento da programação tri-semanal por obra, itens, efetivo e etapas adicionais.
 // Rotas: #/programacao · #/programacao/obra/<id>
-import { html, cabecalho, botao, badge, campo, seletor, modal, toast, confirmar, busca, filtro, alternar, vazio, rodape, delegar, progresso, stat, fmtPct } from '../core/ui.js';
+import { html, cabecalho, botao, badge, campo, seletor, modal, toast, confirmar, busca, filtro, alternar, vazio, delegar, progresso, stat, fmtPct } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, hoje, somarDias, numero, combinaTexto, dataHora } from '../core/util.js';
 import { controleEstado, opcoesUsuarios, abrirHistorico, rotuloCiclo, nomeUsuario } from '../componentes/comuns.js';
@@ -265,7 +265,7 @@ export default {
   onUnmount() { desligar?.(); },
   render(el, ctx) {
     const [secao, id] = ctx.params;
-    el.innerHTML = String(html`<main class="page">${secao === 'obra' ? viewObra(ctx, id) : viewGeral(ctx)}${rodape()}</main>`);
+    el.innerHTML = String(html`<main class="page">${secao === 'obra' ? viewObra(ctx, id) : viewGeral(ctx)}</main>`);
   },
 };
 
