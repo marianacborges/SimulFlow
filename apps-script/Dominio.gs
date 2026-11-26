@@ -111,6 +111,14 @@ function registrarLeitura(repo, agora, entrada) {
   var codigo = normalizarTag(entrada.codigo);
   if (!codigo) throw ErroPresenca('Código da tag vazio', 400);
   var c = buscarColaborador(repo, entrada.codigo, origem);
+  var cadastro = '';
+  if (!c && entrada.texto) {
+    // Tag nova com "Nome|Matrícula|Função" gravado (ex.: pelo app NFC Tools): cadastra na primeira leitura.
+    var auto = cadastrarPelaTag(repo, codigo, entrada.texto);
+    if (auto.recusa) return auto.recusa;
+    c = auto.colaborador;
+    cadastro = auto.cadastro;
+  }
   if (!c) return { ok: false, resultado: 'desconhecida', mensagem: 'Tag não cadastrada', codigo: codigo };
   var colaborador = { nome: c.nome, matricula: c.matricula, funcao: c.funcao };
   if (!c.ativo) return { ok: false, resultado: 'inativo', mensagem: 'Colaborador inativo', colaborador: colaborador };
@@ -128,8 +136,42 @@ function registrarLeitura(repo, agora, entrada) {
   });
   return {
     ok: true, resultado: 'registrado', colaborador: colaborador, data: p.data, horario: p.hora, registradoEm: p.iso, foraTurno: fora, aposFechamento: apos,
+    cadastro: cadastro,
     mensagem: apos ? 'Registrado após o fechamento da planilha' : fora ? 'Presença registrada (fora do turno)' : 'Presença registrada',
   };
+}
+
+/** Lê "Nome|Matrícula|Função" do texto gravado na tag. Campos a mais (ex.: data) são ignorados. */
+function dadosDoTextoDaTag(texto) {
+  var partes = String(texto == null ? '' : texto).split('|').map(function (x) { return x.trim(); });
+  if (partes.length < 3 || !partes[0] || !partes[1] || !partes[2]) return null;
+  return { nome: partes[0], matricula: partes[1], funcao: partes[2] };
+}
+
+/**
+ * Cadastro automático na primeira leitura de uma tag com texto "Nome|Matrícula|Função".
+ * - Matrícula nova: cria o colaborador ligado ao número de série da tag.
+ * - Matrícula já cadastrada sem tag: liga a tag ao cadastro existente (o cadastro prevalece).
+ * - Matrícula já ligada a outra tag: recusa (evita cópia de crachá).
+ */
+function cadastrarPelaTag(repo, codigo, texto) {
+  var d = dadosDoTextoDaTag(texto);
+  if (!d) {
+    return { recusa: { ok: false, resultado: 'desconhecida', mensagem: 'Tag não cadastrada', codigo: codigo,
+      detalhe: 'O texto gravado na tag não está no formato Nome|Matrícula|Função.' } };
+  }
+  var existente = repo.colaboradores().filter(function (x) { return x.matricula === d.matricula; })[0];
+  if (existente && existente.tag && existente.tag !== codigo) {
+    return { recusa: { ok: false, resultado: 'conflito', mensagem: 'Matrícula ' + d.matricula + ' já está ligada a outra tag', codigo: codigo,
+      colaborador: { nome: existente.nome, matricula: existente.matricula, funcao: existente.funcao },
+      detalhe: 'Se o crachá foi trocado, apague o código antigo no cadastro do colaborador.' } };
+  }
+  if (existente) {
+    salvarColaborador(repo, { nome: existente.nome, matricula: existente.matricula, funcao: existente.funcao, tag: codigo, ativo: existente.ativo, matriculaOriginal: existente.matricula });
+  } else {
+    salvarColaborador(repo, { nome: d.nome, matricula: d.matricula, funcao: d.funcao, tag: codigo, ativo: true });
+  }
+  return { colaborador: buscarColaborador(repo, codigo, 'nfc'), cadastro: existente ? 'vinculado' : 'novo' };
 }
 
 /** Ordena registros pelo horário real da leitura. */

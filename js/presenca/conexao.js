@@ -19,6 +19,12 @@ export function validarUrl(url) {
   const u = String(url || '').trim();
   if (/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec\/?$/.test(u)) return u;
   if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(u)) return u; // emulador local (node tools/simulflow.js emular-planilha)
+  if (/^https:\/\/docs\.google\.com\/spreadsheets\//i.test(u)) {
+    throw new Error('Este é o endereço da planilha. Use a URL do app da Web: no Apps Script, Implantar › Gerenciar implantações › copie a URL que começa com https://script.google.com/macros/s/ e termina em /exec');
+  }
+  if (/^https:\/\/script\.google\.com\//i.test(u) && !/\/exec\/?$/.test(u)) {
+    throw new Error('Esta URL do Apps Script não é a do app da Web. Copie a URL em Implantar › Gerenciar implantações (termina em /exec)');
+  }
   if (/^https:\/\//.test(u)) return u;
   throw new Error('Informe a URL do app da Web (https://script.google.com/macros/s/…/exec)');
 }
@@ -60,8 +66,8 @@ export function explicarRespostaInvalida(resp, texto) {
   const limpo = t.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const url = String(resp?.url || '');
   let causa;
-  if (/accounts\.google\.com|ServiceLogin|Fazer login|Sign in/i.test(url + ' ' + t)) {
-    causa = 'O Google pediu login: em Implantar › Gerenciar implantações, deixe "Quem pode acessar" como "Qualquer pessoa" (não "com conta do Google") e publique uma nova versão.';
+  if (resp?.status === 401 || resp?.status === 403 || /accounts\.google\.com|ServiceLogin|Fazer login|Sign in/i.test(url + ' ' + t)) {
+    causa = 'O Google pediu login: em Implantar › Gerenciar implantações › editar, deixe "Executar como: Eu" e "Quem pode acessar: Qualquer pessoa" (não "com conta do Google"), escolha "Nova versão" e implante.';
   } else if (/fun[çc][ãa]o de script n[ãa]o encontrada|script function not found/i.test(limpo)) {
     causa = 'A implantação está com uma versão antiga do código: em Implantar › Gerenciar implantações › editar, escolha "Nova versão" e implante.';
   } else if (/autoriza|authoriz/i.test(limpo)) {

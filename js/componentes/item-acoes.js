@@ -136,7 +136,7 @@ export function modalMoverEtapa(ctx, item) {
 }
 
 /** Botões de ação de um item (respeitam as permissões). opcoes: lista de ações a mostrar. */
-export function botoesItem(ctx, item, opcoes = ['avanco', 'laudo', 'consumo', 'historico']) {
+export function botoesItem(ctx, item, opcoes = ['avanco', 'laudo', 'historico']) {
   const { store, regra, pode } = ctx;
   const etapa = store.obter('etapas', item.etapaId);
   const ativo = !item.arquivado;

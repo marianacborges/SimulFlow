@@ -24,7 +24,7 @@ var ACOES = {
   'leitura': {
     perfis: ['leitor', 'planejamento', 'admin'],
     executar: function (repo, agora, corpo, acesso) {
-      return { leitura: registrarLeitura(repo, agora, { codigo: corpo.codigo, origem: corpo.origem, dispositivo: acesso.nome }) };
+      return { leitura: registrarLeitura(repo, agora, { codigo: corpo.codigo, origem: corpo.origem, texto: String(corpo.texto || '').slice(0, 300), dispositivo: acesso.nome }) };
     },
   },
   'hoje': {

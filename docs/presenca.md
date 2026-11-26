@@ -101,12 +101,35 @@ iPhone, Firefox ou Samsung Internet.
 
 ## 7. Cadastrar a primeira tag
 
-**Opção A, pelo celular** (mais fácil):
+**Opção mais simples: gravar os dados na tag com o app NFC Tools** (Android ou iPhone):
+
+1. No NFC Tools: **Escrever › Adicionar registro › Texto**.
+2. Digite `Nome|Matrícula|Função`, por exemplo `Maria Silva|12345|Soldadora`, e toque em **OK**.
+3. Toque em **Escrever** e encoste o adesivo. Não use "Bloquear tag" nem "Proteger com senha".
+4. Na primeira vez que o crachá passar no celular de leitura, o SimulFlow cadastra a pessoa e já registra
+   a presença. A tela mostra **"Cadastrado agora pela tag"**.
+
+Como funciona:
+
+- O cadastro fica ligado ao **número de série** do adesivo, que vem de fábrica e não muda. Nas
+  leituras seguintes vale o cadastro, e o texto é ignorado.
+- **Matrícula já cadastrada sem tag:** o adesivo é ligado a esse cadastro. Nome e função continuam
+  os do cadastro.
+- **Matrícula já ligada a outro adesivo:** a leitura é recusada, para evitar cópia de crachá. Se o
+  crachá foi trocado, apague o código antigo no cadastro do colaborador.
+- Data e hora **não** vão no adesivo: são o momento de cada leitura.
+- Qualquer celular de leitura, inclusive com perfil leitor, faz esse cadastro. Confira de vez em
+  quando a lista em **Colaboradores**.
+- Para testar no PC sem adesivo, use **Simular leitura** com `código|Nome|Matrícula|Função`, por
+  exemplo `04AABBCCDDEE01|Maria Silva|12345|Soldadora`.
+
+**Opção A, pelo celular:**
 
 1. No celular, entre no SimulFlow com um usuário do PCP.
 2. Em **Presença › Conexão**, conecte com um token **planejamento** ou **admin**.
 3. Em **Colaboradores › Novo colaborador**, preencha Nome, Matrícula e Função.
-4. Toque em **Ler pelo NFC** e encoste o cartão: o código entra no campo › **Salvar**.
+4. Toque em **Ler pelo NFC** e encoste o cartão. O código entra no campo e, se a tag tiver
+   `Nome|Matrícula|Função` gravado, os campos vazios também são preenchidos. Depois toque em **Salvar**.
 
 **Opção B, pelo leitor:**
 

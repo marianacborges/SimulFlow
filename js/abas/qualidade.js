@@ -52,7 +52,7 @@ function viewLaudos(ctx) {
       ${itens.map(i => html`<tr><td><strong>${i.codigo}</strong><span class="subline">${[i.descricao, i.serie].filter(Boolean).join(' · ')}</span></td>
         <td>${store.obter('obras', i.obraId)?.nome}<span class="subline">${store.obter('pedidos', i.pedidoId)?.numero || ''}</span></td><td>${i.opNumero || '—'}</td>
         <td>${numero(percentual(i, extras))}%</td><td>${badgeLaudo(i)}${i.laudo?.nota ? html`<span class="subline">${i.laudo.nota}</span>` : ''}${i.laudo ? html`<span class="subline">${i.laudo.por} · ${data(i.laudo.em)}</span>` : ''}</td>
-        <td>${botoesItem(ctx, i, ['laudo', 'consumo', 'historico'])}</td></tr>`)}</tbody></table></div>${itens.length ? '' : vazio()}</div>`;
+        <td>${botoesItem(ctx, i, ['laudo', 'historico'])}</td></tr>`)}</tbody></table></div>${itens.length ? '' : vazio()}</div>`;
 }
 
 // ---------------- Ensaios ----------------

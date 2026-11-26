@@ -48,7 +48,7 @@ function viewQuadro(ctx) {
           ${progresso(pct, `${it.realizado}/${it.previsto} ${it.unidade}`)}
           <span class="subline">${badge(statusItem(it, store.obter('ciclos', it.cicloId), store.todos('ensaios'), hoje(), extras))}</span>
           ${it.laudo?.nota ? html`<span class="subline">${it.laudo.nota}</span>` : ''}
-          ${botoesItem(ctx, it, ['avanco', 'mover', 'laudo', 'consumo', 'historico', 'arquivar'])}</article>`;
+          ${botoesItem(ctx, it, ['avanco', 'mover', 'laudo', 'historico', 'arquivar'])}</article>`;
       })}</section>`;
   };
   return html`${cabecalho('Produção', 'Etapas/frentes de trabalho por obra, com responsável e itens atribuídos.', html`

@@ -43,7 +43,7 @@ async function iniciar() {
   montarLeitor(raiz.querySelector('[data-host]'), {
     titulo: 'Leitura de presença',
     subtitulo: `Aparelho: ${con.nome} (${con.perfil})`,
-    enviar: async (codigo, origem) => (await chamar('leitura', { codigo, origem })).leitura,
+    enviar: async (codigo, origem, texto) => (await chamar('leitura', { codigo, origem, texto })).leitura,
   });
   rodape.innerHTML = String(html`<p class="muted small" data-turno>Consultando a planilha…</p>
     <button type="button" class="btn ghost sm" data-trocar>${ic('settings')}<span>Trocar conexão deste aparelho</span></button>`);

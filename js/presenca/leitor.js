@@ -7,6 +7,24 @@ export function normalizarTag(codigo) {
   return String(codigo ?? '').trim().replace(/:/g, '').toUpperCase();
 }
 
+/** Texto gravado na tag (registro NDEF do tipo texto, ex.: gravado pelo app NFC Tools). '' se não houver. */
+export function textoDaTag(mensagem) {
+  for (const r of mensagem?.records || []) {
+    if (r.recordType !== 'text' || !r.data) continue;
+    try {
+      const t = new TextDecoder(r.encoding || 'utf-8').decode(r.data).trim();
+      if (t) return t.slice(0, 300);
+    } catch { /* codificação desconhecida: ignora o registro */ }
+  }
+  return '';
+}
+
+/** "Nome|Matrícula|Função" → { nome, matricula, funcao } (campos a mais são ignorados) ou null. */
+export function dadosDoTexto(texto) {
+  const p = String(texto ?? '').split('|').map(x => x.trim());
+  return p.length >= 3 && p[0] && p[1] && p[2] ? { nome: p[0], matricula: p[1], funcao: p[2] } : null;
+}
+
 export function suporteNfc() {
   if (typeof window === 'undefined') return { ok: false, motivo: 'sem-janela' };
   if (!window.isSecureContext) return { ok: false, motivo: 'https', mensagem: 'A leitura NFC exige HTTPS. Abra o sistema por um endereço https://.' };
@@ -28,7 +46,7 @@ export function mensagemErroNfc(e) {
 
 /**
  * Monta o leitor dentro de `el`.
- * opcoes.enviar(codigo, origem) → Promise<resultado da leitura> ({ ok, resultado, mensagem, colaborador, horario, ... })
+ * opcoes.enviar(codigo, origem, texto) → Promise<resultado da leitura> ({ ok, resultado, mensagem, colaborador, horario, ... })
  * Retorna { destruir() }.
  */
 export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitura de presença', subtitulo = '' }) {
@@ -43,7 +61,7 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
     <button type="button" class="btn primario leitor-botao" data-iniciar>${ic('nfc', 22)}<span>Iniciar leitura</span></button>
     <div class="leitor-resultado neutro" data-resultado aria-live="assertive"><strong>Pronto</strong><span>Toque em "Iniciar leitura" e aproxime o cartão do celular.</span></div>
     <form class="leitor-simular" data-simular><label class="field"><span class="field-label">Testar sem a tag</span>
-      <input name="codigo" autocomplete="off" placeholder="Matrícula ou código da tag (ex.: 04:A1:B2)"></label>
+      <input name="codigo" autocomplete="off" placeholder="Matrícula, código da tag ou código|Nome|Matrícula|Função"></label>
       <button type="submit" class="btn outline">${ic('play')}<span>Simular leitura</span></button></form>
     <h3>Últimas leituras</h3><ul class="leitor-ultimas" data-ultimas><li class="muted">Nenhuma leitura nesta sessão.</li></ul>
   </section>`);
@@ -94,7 +112,7 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
     $('[data-ultimas]').innerHTML = ultimas.map(u => `<li class="${u.classe}"><span>${esc(u.hora)}</span> ${esc(u.texto)}</li>`).join('');
   }
 
-  async function processar(codigoBruto, origem) {
+  async function processar(codigoBruto, origem, texto = '') {
     const codigo = origem === 'simulacao' ? String(codigoBruto ?? '').trim() : normalizarTag(codigoBruto);
     if (!codigo) {
       mostrar('erro', 'Tag sem número de série', 'Esta tag não informa o número de série. Use outra tag ou cartão.');
@@ -107,21 +125,25 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
     recentes.set(chave, Date.now());
     mostrar('neutro', 'Registrando…', origem === 'simulacao' ? 'Simulação: ' + codigo : 'Tag ' + chave);
     try {
-      const r = await enviar(codigo, origem);
+      const r = await enviar(codigo, origem, texto);
       const c = r.colaborador || {};
       if (r.resultado === 'registrado') {
         const avisos = [r.foraTurno ? '<span class="badge amber">fora do turno</span>' : '', r.aposFechamento ? '<span class="badge amber">após o fechamento</span>' : ''].join(' ');
         const classe = r.foraTurno || r.aposFechamento ? 'aviso' : 'ok';
-        mostrar(classe, c.nome, `Matrícula ${c.matricula} · ${c.funcao} · ${r.data.split('-').reverse().join('/')} ${r.horario}`, avisos ? `<div class="leitor-selos">${avisos}</div>` : '');
+        const novo = r.cadastro === 'novo' ? 'Cadastrado agora pela tag · ' : r.cadastro === 'vinculado' ? 'Tag ligada ao cadastro · ' : '';
+        mostrar(classe, c.nome, `${novo}Matrícula ${c.matricula} · ${c.funcao} · ${r.data.split('-').reverse().join('/')} ${r.horario}`, avisos ? `<div class="leitor-selos">${avisos}</div>` : '');
         sinal(classe);
-        registrarNaLista(classe, `${c.nome} (${c.matricula}) registrado${r.foraTurno ? ' — fora do turno' : ''}${r.aposFechamento ? ' — após o fechamento' : ''}`);
+        registrarNaLista(classe, `${c.nome} (${c.matricula}) registrado${novo ? ' — ' + novo.replace(' · ', '').toLowerCase() : ''}${r.foraTurno ? ' — fora do turno' : ''}${r.aposFechamento ? ' — após o fechamento' : ''}`);
       } else if (r.resultado === 'duplicado') {
         mostrar('aviso', c.nome, `${r.mensagem}. Nada foi registrado de novo.`);
         sinal('aviso');
         registrarNaLista('aviso', `${c.nome}: ${r.mensagem.toLowerCase()}`);
       } else {
         const titulo = r.resultado === 'desconhecida' ? 'Tag não cadastrada' : r.mensagem || 'Leitura recusada';
-        mostrar('erro', titulo, r.resultado === 'desconhecida' ? `Código ${r.codigo || chave}. Cadastre a tag em Colaboradores.` : (c.nome ? `${c.nome} (${c.matricula})` : ''));
+        const detalhe = r.resultado === 'desconhecida'
+          ? `Código ${r.codigo || chave}. ${r.detalhe || 'Grave Nome|Matrícula|Função na tag (app NFC Tools) ou cadastre em Colaboradores.'}`
+          : [c.nome ? `${c.nome} (${c.matricula})` : '', r.detalhe || ''].filter(Boolean).join('. ');
+        mostrar('erro', titulo, detalhe);
         sinal('erro');
         registrarNaLista('erro', `${titulo}${r.codigo ? ' — ' + r.codigo : c.nome ? ' — ' + c.nome : ''}`);
       }
@@ -157,7 +179,7 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
     try {
       controle = new AbortController();
       leitor = new NDEFReader();
-      leitor.onreading = ev => processar(ev.serialNumber, 'nfc');
+      leitor.onreading = ev => processar(ev.serialNumber, 'nfc', textoDaTag(ev.message));
       leitor.onreadingerror = () => { mostrar('erro', 'Não foi possível ler a tag', 'Aproxime o cartão de novo e mantenha parado por um instante.'); sinal('erro'); };
       await leitor.scan({ signal: controle.signal });
       ativo = true;
@@ -186,8 +208,10 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
     const campo = e.currentTarget.codigo;
     const v = campo.value.trim();
     if (!v) { campo.focus(); return; }
-    recentes.delete(normalizarTag(v));
-    processar(v, 'simulacao');
+    // "código|Nome|Matrícula|Função" simula uma tag nova com texto gravado.
+    const [cod, ...resto] = v.split('|');
+    recentes.delete(normalizarTag(cod));
+    processar(cod.trim(), 'simulacao', resto.length ? resto.join('|') : '');
     campo.value = '';
   });
 
@@ -197,7 +221,7 @@ export function montarLeitor(el, { enviar, ignorarSegundos = 3, titulo = 'Leitur
   };
 }
 
-/** Lê uma única tag (para preencher o código no cadastro). Resolve com o código normalizado. */
+/** Lê uma única tag (para preencher o cadastro). Resolve com { codigo, texto }. */
 export async function lerUmaTag(tempoLimiteMs = 20000) {
   const s = suporteNfc();
   if (!s.ok) throw new Error(s.mensagem);
@@ -205,7 +229,7 @@ export async function lerUmaTag(tempoLimiteMs = 20000) {
   const leitor = new NDEFReader();
   return new Promise((resolve, reject) => {
     const limite = setTimeout(() => { controle.abort(); reject(new Error('Nenhuma tag lida em 20 segundos')); }, tempoLimiteMs);
-    leitor.onreading = ev => { clearTimeout(limite); controle.abort(); resolve(normalizarTag(ev.serialNumber)); };
+    leitor.onreading = ev => { clearTimeout(limite); controle.abort(); resolve({ codigo: normalizarTag(ev.serialNumber), texto: textoDaTag(ev.message) }); };
     leitor.onreadingerror = () => { /* continua tentando até o limite */ };
     leitor.scan({ signal: controle.signal }).catch(e => { clearTimeout(limite); reject(new Error(mensagemErroNfc(e))); });
   });

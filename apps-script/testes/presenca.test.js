@@ -258,3 +258,70 @@ describe('acesso e cadastro', () => {
     assert.deepEqual(t.estado.gatilhos, [{ funcao: 'fechamentoAgendado', minutos: 5 }]);
   });
 });
+
+describe('cadastro pelo texto gravado na tag (Nome|Matrícula|Função)', () => {
+  const lerComTexto = (t, codigo, texto, token = t.leitor) => t.api('leitura', { codigo, origem: 'nfc', texto }, token);
+
+  test('tag nova com texto: o leitor cadastra o colaborador e já registra a presença', () => {
+    const t = ambiente('08:10');
+    const r = lerComTexto(t, '04:aa:bb:cc:dd:ee:01', 'Maria Silva | 12345 | Soldadora');
+    assert.equal(r.ok, true, r.erro);
+    assert.equal(r.leitura.resultado, 'registrado');
+    assert.equal(r.leitura.cadastro, 'novo');
+    assert.deepEqual(r.leitura.colaborador, { nome: 'Maria Silva', matricula: '12345', funcao: 'Soldadora' });
+    const cols = t.api('colaboradores.listar', {}, t.planej).colaboradores;
+    assert.deepEqual(cols.find(c => c.matricula === '12345'), { nome: 'Maria Silva', matricula: '12345', funcao: 'Soldadora', tag: '04AABBCCDDEE01', ativo: true });
+    assert.equal(t.hoje().contadores.presentes, 1);
+  });
+
+  test('segunda leitura da mesma tag: "já registrado", sem cadastrar de novo', () => {
+    const t = ambiente('08:10');
+    lerComTexto(t, '04AABBCCDDEE01', 'Maria Silva|12345|Soldadora');
+    const r = lerComTexto(t, '04AABBCCDDEE01', 'Maria Silva|12345|Soldadora');
+    assert.equal(r.leitura.resultado, 'duplicado');
+    assert.equal(t.api('colaboradores.listar', {}, t.planej).colaboradores.filter(c => c.matricula === '12345').length, 1);
+  });
+
+  test('campos a mais no texto (ex.: data) são ignorados', () => {
+    const t = ambiente('08:10');
+    const r = lerComTexto(t, '04AABBCCDDEE02', 'João Reis|222|Pintor|26/11/2026 08:00');
+    assert.deepEqual(r.leitura.colaborador, { nome: 'João Reis', matricula: '222', funcao: 'Pintor' });
+  });
+
+  test('matrícula já cadastrada sem tag: liga a tag ao cadastro existente (o cadastro prevalece)', () => {
+    const t = ambiente('08:10');
+    assert.equal(t.api('colaboradores.salvar', { colaborador: { nome: 'Davi Rocha', matricula: '333', funcao: 'Montador', tag: '', ativo: true } }, t.planej).ok, true);
+    const r = lerComTexto(t, '04AABBCCDDEE03', 'Davi R.|333|Ajudante');
+    assert.equal(r.leitura.resultado, 'registrado');
+    assert.equal(r.leitura.cadastro, 'vinculado');
+    assert.deepEqual(r.leitura.colaborador, { nome: 'Davi Rocha', matricula: '333', funcao: 'Montador' });
+    const davi = t.api('colaboradores.listar', {}, t.planej).colaboradores.find(c => c.matricula === '333');
+    assert.equal(davi.tag, '04AABBCCDDEE03');
+  });
+
+  test('matrícula já ligada a outra tag: recusa (cópia de crachá) e nada é gravado', () => {
+    const t = ambiente('08:10');
+    const r = lerComTexto(t, '04AABBCCDDEE04', 'Ana Souza|00123|Soldador');
+    assert.equal(r.leitura.resultado, 'conflito');
+    assert.match(r.leitura.mensagem, /já está ligada a outra tag/);
+    assert.equal(t.hoje().contadores.presentes, 0);
+    const ana = t.api('colaboradores.listar', {}, t.planej).colaboradores.find(c => c.matricula === '00123');
+    assert.equal(ana.tag, '04A1B2C3');
+  });
+
+  test('texto fora do formato: "Tag não cadastrada" com explicação, nada é gravado', () => {
+    const t = ambiente('08:10');
+    const r = lerComTexto(t, '04AABBCCDDEE05', 'Maria Silva');
+    assert.equal(r.leitura.resultado, 'desconhecida');
+    assert.match(r.leitura.detalhe, /Nome\|Matrícula\|Função/);
+    assert.equal(t.api('colaboradores.listar', {}, t.planej).colaboradores.length, 3);
+  });
+
+  test('tag já cadastrada: o texto gravado é ignorado (vale o cadastro)', () => {
+    const t = ambiente('08:10');
+    const r = lerComTexto(t, '04:A1:B2:C3', 'Outro Nome|999|Outra função');
+    assert.equal(r.leitura.resultado, 'registrado');
+    assert.equal(r.leitura.cadastro, '');
+    assert.equal(r.leitura.colaborador.nome, 'Ana Souza');
+  });
+});

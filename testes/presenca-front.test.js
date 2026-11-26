@@ -64,3 +64,16 @@ test('XLSX gerado é um zip válido com as abas e os valores', () => {
   assert.ok(z['xl/worksheets/sheet2.xml'].includes('<v>1</v>'), 'número como número');
   assert.ok(z['xl/styles.xml'].includes('<b/>'));
 });
+
+test('texto gravado na tag (NFC Tools): lê o registro de texto e separa Nome|Matrícula|Função', async () => {
+  const { textoDaTag, dadosDoTexto } = await import('../js/presenca/leitor.js');
+  const bytes = new TextEncoder().encode('Maria Silva | 12345 | Soldadora');
+  const mensagem = { records: [{ recordType: 'url', data: new DataView(new ArrayBuffer(2)) }, { recordType: 'text', encoding: 'utf-8', data: new DataView(bytes.buffer) }] };
+  assert.equal(textoDaTag(mensagem), 'Maria Silva | 12345 | Soldadora');
+  assert.equal(textoDaTag({ records: [] }), '');
+  assert.equal(textoDaTag(undefined), '');
+  assert.deepEqual(dadosDoTexto(textoDaTag(mensagem)), { nome: 'Maria Silva', matricula: '12345', funcao: 'Soldadora' });
+  assert.deepEqual(dadosDoTexto('João|222|Pintor|26/11/2026'), { nome: 'João', matricula: '222', funcao: 'Pintor' });
+  assert.equal(dadosDoTexto('Maria Silva'), null);
+  assert.equal(dadosDoTexto('Maria||Soldadora'), null);
+});

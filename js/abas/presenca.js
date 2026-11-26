@@ -8,7 +8,7 @@ import { baixar } from '../core/exportar.js';
 import { gerarXlsx, TIPO_XLSX } from '../core/xlsx.js';
 import { controleEstado } from '../componentes/comuns.js';
 import { conexao, salvarConexao, limparConexao, chamar, testarConexao, podePlanejar, ehAdminPlanilha, linkCelular } from '../presenca/conexao.js';
-import { montarLeitor, lerUmaTag, suporteNfc } from '../presenca/leitor.js';
+import { montarLeitor, lerUmaTag, suporteNfc, dadosDoTexto } from '../presenca/leitor.js';
 import { colaboradoresDoCSV, gerarCSV, MODELO_CSV } from '../presenca/csv.js';
 
 const estado = { plan: { busca: '', campo: 'hora', dir: 'asc' }, col: { busca: '', ativos: '' }, hist: { busca: '' } };
@@ -151,9 +151,9 @@ function anexarLeitor(el) {
       titulo: 'Leitura de presença',
       subtitulo: `Acesso: ${con.nome} (${con.perfil})`,
       ignorarSegundos: config.app.presenca?.ignorarRepeticaoSegundos ?? 3,
-      enviar: async (codigo, origem) => {
-        const r = await chamar('leitura', { codigo, origem });
-        if (podePlanejar(conexao())) recarregarHoje();
+      enviar: async (codigo, origem, texto) => {
+        const r = await chamar('leitura', { codigo, origem, texto });
+        if (podePlanejar(conexao())) { recarregarHoje(); if (r.leitura?.cadastro) recarregarColaboradores(); }
         return r.leitura;
       },
     });
@@ -271,7 +271,14 @@ function formColaborador(ctx, c = null) {
     aoMontar: form => form.querySelector('[data-ler-tag]')?.addEventListener('click', async e => {
       const b = e.currentTarget;
       b.disabled = true; b.querySelector('span').textContent = 'Aproxime a tag…';
-      try { form.tag.value = await lerUmaTag(); toast('Tag lida: ' + form.tag.value); } catch (err) { toast(err.message, 'erro'); }
+      try {
+        const lida = await lerUmaTag();
+        form.tag.value = lida.codigo;
+        // Se a tag tiver "Nome|Matrícula|Função" gravado, preenche os campos vazios.
+        const d = dadosDoTexto(lida.texto);
+        if (d) for (const k of ['nome', 'matricula', 'funcao']) if (!form[k].value.trim()) form[k].value = d[k];
+        toast('Tag lida: ' + lida.codigo + (d ? ' · dados do texto da tag preenchidos' : ''));
+      } catch (err) { toast(err.message, 'erro'); }
       finally { b.disabled = false; b.querySelector('span').textContent = 'Ler pelo NFC'; }
     }),
     onOk: async d => {
