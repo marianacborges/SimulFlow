@@ -44,9 +44,19 @@ function prepararEstrutura(ss) {
     }
   });
   var hoje = ss.getSheetByName(CONFIG.ABAS.HOJE) || ss.insertSheet(CONFIG.ABAS.HOJE, 0);
-  hoje.getRange(1, 1).setFormula(
-    '=IFERROR(QUERY(\'' + CONFIG.ABAS.REGISTROS + '\'!A:K, "select D, C, E, A, B, F, G where A = \'" & YEAR(TODAY()) & "-" & TEXT(MONTH(TODAY()), "00") & "-" & TEXT(DAY(TODAY()), "00") & "\' order by B", 1), "Nenhuma leitura hoje")');
+  var celula = hoje.getRange(1, 1);
+  celula.setFormula(formulaHoje(','));
+  // Planilhas em português (e outros idiomas com vírgula decimal) separam argumentos com ";".
+  try {
+    SpreadsheetApp.flush();
+    if (/^#ERRO/i.test(String(celula.getDisplayValue()))) celula.setFormula(formulaHoje(';'));
+  } catch (e) { /* sem como conferir: mantém a fórmula com vírgula */ }
   return ss;
+}
+
+/** Fórmula da aba "Hoje", com o separador de argumentos do idioma da planilha (',' ou ';'). */
+function formulaHoje(sep) {
+  return '=IFERROR(QUERY(\'' + CONFIG.ABAS.REGISTROS + '\'!A:K' + sep + ' "select D, C, E, A, B, F, G where A = \'" & YEAR(TODAY()) & "-" & TEXT(MONTH(TODAY())' + sep + ' "00") & "-" & TEXT(DAY(TODAY())' + sep + ' "00") & "\' order by B"' + sep + ' 1)' + sep + ' "Nenhuma leitura hoje")';
 }
 
 function estruturaPronta(ss) {

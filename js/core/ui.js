@@ -125,7 +125,10 @@ export function toast(msg, tipo = 'ok') {
   t.className = `toast ${tipo}`;
   t.textContent = msg;
   area.appendChild(t);
-  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, tipo === 'erro' ? 5000 : 3000);
+  // Mensagens longas ficam mais tempo; clicar fecha na hora.
+  const fechar = () => { t.classList.add('out'); setTimeout(() => t.remove(), 300); };
+  t.addEventListener('click', fechar);
+  setTimeout(fechar, Math.min(20000, Math.max(tipo === 'erro' ? 5000 : 3000, String(msg).length * 70)));
 }
 
 // ---------- Formulários e modal ----------

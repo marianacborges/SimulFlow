@@ -47,10 +47,30 @@ export async function chamar(acao, dados = {}, con = conexao()) {
   } finally {
     clearTimeout(limite);
   }
+  const textoResp = await resp.text().catch(() => '');
   let j;
-  try { j = await resp.json(); } catch { throw erro('Resposta inválida da planilha. Confira se a URL é a do app da Web (termina em /exec).', 'resposta'); }
+  try { j = JSON.parse(textoResp); } catch { throw erro(explicarRespostaInvalida(resp, textoResp), 'resposta'); }
   if (!j.ok) throw erro(j.erro || 'Erro na planilha', j.status, j.detalhes);
   return j;
+}
+
+/** Quando o Google devolve uma página (HTML) em vez de JSON, diz o motivo provável e mostra o início da resposta. */
+export function explicarRespostaInvalida(resp, texto) {
+  const t = String(texto || '');
+  const limpo = t.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const url = String(resp?.url || '');
+  let causa;
+  if (/accounts\.google\.com|ServiceLogin|Fazer login|Sign in/i.test(url + ' ' + t)) {
+    causa = 'O Google pediu login: em Implantar › Gerenciar implantações, deixe "Quem pode acessar" como "Qualquer pessoa" (não "com conta do Google") e publique uma nova versão.';
+  } else if (/fun[çc][ãa]o de script n[ãa]o encontrada|script function not found/i.test(limpo)) {
+    causa = 'A implantação está com uma versão antiga do código: em Implantar › Gerenciar implantações › editar, escolha "Nova versão" e implante.';
+  } else if (/autoriza|authoriz/i.test(limpo)) {
+    causa = 'O script precisa ser autorizado de novo: no Apps Script, execute a função instalarGatilho e aceite as permissões.';
+  } else {
+    causa = 'Confira se a URL é a do app da Web (termina em /exec) e se a implantação está com a versão mais nova do código.';
+  }
+  const trecho = limpo ? ` Resposta do Google (HTTP ${resp?.status ?? '?'}): "${limpo.slice(0, 180)}${limpo.length > 180 ? '…' : ''}"` : ` Resposta vazia do Google (HTTP ${resp?.status ?? '?'}).`;
+  return 'Resposta inválida da planilha. ' + causa + trecho;
 }
 
 /** Testa URL + token e devolve o status (perfil, nome do acesso, turno). */
