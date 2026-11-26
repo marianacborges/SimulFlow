@@ -1,0 +1,40 @@
+{
+  "nome": "SimulFlow",
+  "subtitulo": "SIMULTANEOUS PRODUCTION TRACKING",
+  "descricao": "Acompanhamento de OPs e FAs entre PCP, Produção, Projetos/Obras, Almoxarifado e Qualidade",
+  "versao": "2.0.0",
+  "hostLoginPadrao": "simulflow2-40@gmail.com",
+  "areas": ["PCP", "Produção", "Projetos/Obras", "Almoxarifado", "Qualidade"],
+  "abasDaArea": {
+    "PCP": ["pcp", "presenca"],
+    "Produção": ["producao"],
+    "Projetos/Obras": ["projetos"],
+    "Almoxarifado": ["almoxarifado"],
+    "Qualidade": ["qualidade"]
+  },
+  "funcoes": [
+    { "id": "gestor", "rotulo": "Gestor", "descricao": "Arquiva obras/itens da Programação, move itens de ciclo, cria ciclos e cancela ensaios" },
+    { "id": "supervisor", "rotulo": "Supervisor/Técnico", "descricao": "Atualiza quantidades e efetivo das etapas da sua área ou sob sua responsabilidade" },
+    { "id": "inspetor", "rotulo": "Inspetor", "descricao": "Solicita ensaios e executa os ensaios atribuídos a ele" },
+    { "id": "nii", "rotulo": "Verificador NII", "descricao": "Aprova ou reprova a verificação NII dos ensaios atribuídos" },
+    { "id": "niii", "rotulo": "Verificador NIII", "descricao": "Aprova ou reprova a verificação NIII (após NII aprovado)" },
+    { "id": "etapa_adicional", "rotulo": "Criar etapa adicional", "descricao": "Cria etapas adicionais/retrabalho sem alterar a programação original" }
+  ],
+  "setoresOP": ["PCP", "Usinagem", "Montagem", "Fundição", "Produção", "Projetos", "Almoxarifado", "Qualidade"],
+  "statusOP": ["Em andamento", "Atrasada", "Parada", "Aguardando material", "Aguardando qualidade", "Concluída"],
+  "motivosParada": ["Falta de matéria-prima", "Falta de ferramentas", "Problemas em máquinas", "Falta de mão de obra", "Aguardando informações", "Outros"],
+  "statusFA": ["Aberta", "Em andamento", "Concluída", "Cancelada"],
+  "statusObra": ["Em andamento", "Concluído", "Pausado"],
+  "statusPedido": ["Em andamento", "Concluído", "Pausado"],
+  "unidadesMaterial": ["un", "kg", "m"],
+  "turnos": ["manhã", "tarde", "noite"],
+  "sessaoMinutos": 30,
+  "tentativasLogin": 5,
+  "bloqueioMinutos": 15,
+  "senhaMinima": 8,
+  "presenca": {
+    "fuso": "America/Sao_Paulo",
+    "recargaSegundos": 8,
+    "ignorarRepeticaoSegundos": 3
+  }
+}

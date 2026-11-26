@@ -1,0 +1,52 @@
+/* Tokens de cor e tipografia — tons industriais sóbrios. */
+:root {
+  --bg: #f4f6fa; --fg: #243248; --muted: #6b7a90; --border: #e1e6ee; --card: #ffffff;
+  --primary: #2563c9; --primary-fg: #ffffff; --primary-soft: #e8f0fc;
+  --sidebar: #142238; --sidebar-fg: #b9c4d6; --sidebar-active: #22385a;
+  --blue: #2563c9; --blue-soft: #e8f0fc; --green: #1f8a5b; --green-soft: #e4f5ec;
+  --amber: #b7791f; --amber-soft: #fdf4e2; --red: #c8362f; --red-soft: #fbe9e7;
+  --cyan: #1b8aa5; --cyan-soft: #e2f4f8; --neutral: #6b7a90; --neutral-soft: #eef1f5;
+  --shadow: 0 1px 3px rgba(20, 34, 56, .06); --overlay: rgba(14, 22, 38, .5);
+  --radius: 8px; --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1726; --fg: #e3e9f3; --muted: #93a1b7; --border: #253449; --card: #16213a;
+    --primary: #4b8af0; --primary-soft: #1c2f52; --sidebar: #0a1220; --sidebar-fg: #9fb0c8; --sidebar-active: #1b2c48;
+    --blue: #6aa1f5; --blue-soft: #1a2c4b; --green: #49c08a; --green-soft: #133426; --amber: #e2a94a; --amber-soft: #382b12;
+    --red: #f06a62; --red-soft: #3a1a1a; --cyan: #4cc1dc; --cyan-soft: #12303a; --neutral: #93a1b7; --neutral-soft: #1d2a40;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1726; --fg: #e3e9f3; --muted: #93a1b7; --border: #253449; --card: #16213a;
+  --primary: #4b8af0; --primary-soft: #1c2f52; --sidebar: #0a1220; --sidebar-fg: #9fb0c8; --sidebar-active: #1b2c48;
+  --blue: #6aa1f5; --blue-soft: #1a2c4b; --green: #49c08a; --green-soft: #133426; --amber: #e2a94a; --amber-soft: #382b12;
+  --red: #f06a62; --red-soft: #3a1a1a; --cyan: #4cc1dc; --cyan-soft: #12303a; --neutral: #93a1b7; --neutral-soft: #1d2a40;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 14px; line-height: 1.45; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 22px; font-weight: 700; }
+h2 { font-size: 16px; font-weight: 700; }
+h3 { font-size: 14px; font-weight: 700; }
+a { color: inherit; text-decoration: none; }
+a.link, .link { color: var(--primary); font-weight: 600; cursor: pointer; }
+a.link:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; color: inherit; }
+input, select, textarea {
+  background: var(--card); border: 1px solid var(--border); border-radius: 6px; min-height: 38px; padding: 8px 11px;
+  outline: none; max-width: 100%; width: 100%;
+}
+textarea { min-height: 72px; resize: vertical; }
+input[type=checkbox], input[type=radio] { width: auto; min-height: 0; accent-color: var(--primary); }
+input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+code { background: var(--neutral-soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.ic { flex-shrink: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.red { color: var(--red); } .green { color: var(--green); } .amber { color: var(--amber); } .blue { color: var(--blue); }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

@@ -1,0 +1,14 @@
+{
+  "name": "simulflow",
+  "version": "2.1.0",
+  "private": true,
+  "description": "SimulFlow — acompanhamento de OPs e FAs, com Presença operacional (NFC) em Google Planilhas",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test apps-script/testes/*.test.js testes/*.test.js && node tools/simulflow.js testar",
+    "emular-planilha": "node tools/simulflow.js emular-planilha"
+  }
+}
