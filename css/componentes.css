@@ -219,3 +219,34 @@ details.multi[open] .check-list { margin-top: 6px; background: var(--card); }
 .th-ordem:hover { color: var(--primary); }
 .erro-band { background: var(--red-soft); color: var(--red); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .lista-erros { margin: 0; padding-left: 18px; max-height: 50vh; overflow: auto; font-size: 13px; color: var(--red); }
+
+/* Configurações: índice em cartões */
+.cards-config { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.card-config { display: flex; align-items: center; gap: 14px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); color: var(--fg); }
+.card-config:hover, .card-config:focus-visible { border-color: var(--primary); }
+.card-config > .ic { color: var(--muted); margin-left: auto; }
+.card-config-texto { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.card-config-texto span { color: var(--muted); font-size: 12.5px; }
+.card-config-texto small { color: var(--primary); font-size: 12px; font-weight: 600; }
+
+/* Aparência: escolha do tema */
+.opcoes-tema { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.opcao-tema { display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--border); border-radius: 10px; padding: 12px; cursor: pointer; }
+.opcao-tema.ativa { border-color: var(--primary); }
+.opcao-tema input { position: absolute; opacity: 0; pointer-events: none; }
+.opcao-tema:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.amostra-tema { height: 58px; border-radius: 6px; border: 1px solid var(--border); }
+.amostra-claro { background: linear-gradient(90deg, #142238 22%, #f4f6fa 22%); }
+.amostra-escuro { background: linear-gradient(90deg, #0a1220 22%, #16213a 22%); }
+.amostra-auto { background: linear-gradient(90deg, #142238 22%, #f4f6fa 22%, #f4f6fa 61%, #16213a 61%); }
+
+/* Dashboard: filtros do acompanhamento recolhidos */
+.painel-filtros { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 12px; box-shadow: var(--shadow); }
+.painel-filtros > summary { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; list-style: none; }
+.painel-filtros > summary::-webkit-details-marker { display: none; }
+.painel-filtros-resumo { flex: 1; min-width: 0; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.painel-filtros-resumo strong { color: var(--fg); margin-right: 6px; }
+.painel-filtros-acao { color: var(--primary); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.painel-filtros[open] .painel-filtros-acao { display: none; }
+.painel-filtros[open] .painel-filtros-resumo { white-space: normal; }
+.painel-filtros > form { padding: 4px 16px 16px; border-top: 1px solid var(--border); }

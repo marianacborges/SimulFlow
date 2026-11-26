@@ -1,12 +1,13 @@
-// Aba Dashboard: indicadores, alertas e movimentações filtrados por período, status, obra, etapa e tipo de ensaio.
-// Mostra apenas as obras liberadas ao usuário (cadastro de usuários). Filtros ficam só na sessão do navegador.
-import { html, cabecalho, botao, campo, modal, toast, vazio, rodape, delegar, stat, raw } from '../core/ui.js';
+// Acompanhamento da programação (parte de baixo da aba Dashboard): indicadores, alertas e movimentações
+// filtrados por período, status, obra, etapa e tipo de ensaio. Mostra só as obras liberadas ao usuário
+// (o host vê todas). Os filtros ficam recolhidos e valem só nesta sessão do navegador.
+import { html, botao, campo, modal, toast, vazio, delegar, stat, raw, ic } from '../core/ui.js';
 import { dataHora, data } from '../core/util.js';
 import { montarPainel, filtrosPadrao, periodo, erroPeriodo, statusRotulo, STATUS_ITEM, STATUS_EXTRA, STATUS_ENSAIO_FILTRO } from '../data/painel-dados.js';
 import { relatorioPDF } from '../core/exportar.js';
 
 let aplicado = null, rascunho = null, erro = '', usuarioDosFiltros = '';
-let desligar = null;
+let filtrosAbertos = false;
 
 const chave = u => 'simulflow.filtros.dashboard.' + u.id;
 
@@ -52,10 +53,10 @@ function linhas(titulo, lista, datas = false) {
       <p><strong>${r.tipo}</strong> · ${r.status}${r.ator ? ' · ' + r.ator : ''}</p><p>${r.detalhe}</p></div></article>`)}</div>` : vazio('Nenhum registro para os filtros selecionados')}</section>`;
 }
 
-function view(ctx) {
+export function secaoProgramacao(ctx) {
   const { store } = ctx;
   const liberadas = obrasLiberadas(ctx);
-  if (!liberadas.length) return html`${cabecalho('Dashboard', 'Dashboard de acompanhamento')}<div class="denied"><h2>Não há obras liberadas</h2><p class="muted">O host precisa definir suas obras autorizadas no cadastro do usuário.</p></div>`;
+  if (!liberadas.length) return html`<section class="section"><h2>Acompanhamento da programação</h2><div class="panel" style="margin-top:10px"><p class="muted">Não há obras liberadas para você neste painel. O host define as obras autorizadas no cadastro do usuário.</p></div></section>`;
   const d = dados(ctx);
   iniciarFiltros(ctx, d);
   const r = rascunho;
@@ -64,9 +65,11 @@ function view(ctx) {
   const etapas = d.etapas.filter(e => !e.arquivado && (!r.obras.length || r.obras.includes(e.obraId) || r.obras.includes(store.obter('obras', e.obraId)?.parentId)));
   const cicloAtivo = d.ciclos.some(c => c.inicio <= aplicado.fim && c.fim >= aplicado.inicio && c.status !== 'encerrado');
   const exportacoes = store.filtrar('auditoria', a => a.acao === 'Dashboard exportado em PDF').sort((a, b) => b.em.localeCompare(a.em));
-  return html`${cabecalho('Dashboard', 'Dashboard de acompanhamento', html`${ctx.host ? botao('', { acao: 'limite', v: 'outline', tam: 'icon', icone: 'settings', titulo: 'Configurar limite de período' }) : ''}
-      ${botao('Exportar PDF', { acao: 'pdf', icone: 'download', desab: !!erroPeriodo(aplicado, max) })}`)}
-    <form class="panel" data-filtros>
+  return html`<section class="section" id="programacao-painel"><div class="section-title"><div><h2>Acompanhamento da programação</h2><p class="muted small">Indicadores, alertas e movimentações das obras liberadas para você.</p></div>
+      <div class="toolbar">${ctx.host ? botao('', { acao: 'limite', v: 'outline', tam: 'icon', icone: 'settings', titulo: 'Configurar limite de período' }) : ''}
+      ${botao('Exportar PDF', { acao: 'pdf', icone: 'download', desab: !!erroPeriodo(aplicado, max) })}</div></div>
+    <details class="painel-filtros" data-caixa-filtros${filtrosAbertos || erro ? raw(' open') : ''}><summary>${ic('settings')}<span class="painel-filtros-resumo"><strong>Filtros</strong> ${v.resumo}</span><span class="painel-filtros-acao">Configurar</span></summary>
+    <form data-filtros>
       <div class="grid-3"><label class="field"><span class="field-label">Período</span><select name="preset" data-preset>${[['ciclo', 'Ciclo tri-semanal atual'], ['hoje', 'Hoje'], ['7', 'Últimos 7 dias'], ['30', 'Últimos 30 dias'], ['custom', 'Personalizado']].map(([vv, t]) => html`<option value="${vv}"${r.preset === vv ? raw(' selected') : ''}>${t}</option>`)}</select></label>
         ${campo('Data inicial', html`<input type="date" name="inicio" value="${r.inicio}" data-data>`)}${campo('Data final', html`<input type="date" name="fim" value="${r.fim}" data-data>`)}</div>
       <div class="grid-3" style="margin-top:12px">${multi('statusItem', 'Status dos itens', STATUS_ITEM.map(s => ({ v: s, t: s })), r.statusItem)}
@@ -78,11 +81,11 @@ function view(ctx) {
       <div class="toolbar" style="margin-top:14px">${botao('Aplicar filtros', { acao: 'aplicar', icone: 'check' })}${botao('Limpar filtros', { acao: 'limpar-filtros', v: 'outline', icone: 'x' })}</div>
       ${erro ? html`<p role="alert" class="error">${erro}</p>` : ''}
       ${!cicloAtivo && aplicado.preset === 'ciclo' ? html`<p class="muted small">Nenhum ciclo atual disponível. Período exibido: hoje.</p>` : ''}
-      <p class="muted small" style="margin-top:8px" data-resumo>${v.resumo}</p><p class="muted small">Limite de consulta: ${max ? max + ' dias' : 'não configurado'}</p></form>
+    </form></details>
     <div class="stats" style="margin-top:18px">${v.indicadores.map(i => stat({ rotulo: i.rotulo, valor: i.valor, icone: i.icone, cor: i.cor, rodape: i.detalhe }))}</div>
     <p class="muted small">Itens: data prevista. Ensaios: data da solicitação. Etapas adicionais: data prevista. Alertas e movimentações: data do registro.</p>
     ${linhas('Alertas', v.alertas)}${linhas('Movimentações', v.movimentos)}${linhas('Itens em atraso fora do período', v.atrasos, true)}
-    ${ctx.host ? html`<section class="section"><h2>Histórico de exportações</h2><div class="panel" style="margin-top:10px">${exportacoes.map(a => html`<div class="alert-item"><div class="alert-copy"><strong>${a.ator}</strong> · ${dataHora(a.em)}<p>${a.depois?.resumo || ''}</p></div></div>`)}${exportacoes.length ? '' : vazio('Nenhuma exportação registrada.')}</div></section>` : ''}`;
+    ${ctx.host && exportacoes.length ? html`<section class="section"><h2>Histórico de exportações</h2><div class="panel" style="margin-top:10px">${exportacoes.map(a => html`<div class="alert-item"><div class="alert-copy"><strong>${a.ator}</strong> · ${dataHora(a.em)}<p>${a.depois?.resumo || ''}</p></div></div>`)}</div></section>` : ''}</section>`;
 }
 
 function lerRascunho(el) {
@@ -101,6 +104,7 @@ function aplicar(ctx, filtros) {
   erro = '';
   aplicado = structuredClone(filtros);
   rascunho = structuredClone(filtros);
+  filtrosAbertos = false;
   try { sessionStorage.setItem(chave(ctx.usuario), JSON.stringify(aplicado)); } catch { /* sem sessão */ }
   ctx.rerender();
 }
@@ -121,39 +125,43 @@ function exportarPDF(ctx) {
   if (ok) { ctx.acoes.programacao.registrarExportacao({ filtros: aplicado, resumo: v.resumo, obraIds: [...new Set(v.itens.map(i => i.obraId))] }); toast('PDF gerado e registrado no histórico'); }
 }
 
-export default {
-  id: 'dashboard',
-  titulo: 'Dashboard',
-  onMount(el, ctx) {
-    desligar = delegar(el, {
-      cliques: {
-        aplicar: () => { lerRascunho(el); aplicar(ctx, rascunho); },
-        'limpar-filtros': () => aplicar(ctx, filtrosPadrao(dados(ctx).ciclos)),
-        pdf: () => exportarPDF(ctx),
-        limite: () => modal({
-          titulo: 'Limite de período do Dashboard', descricao: 'Configuração do host. Sem valor definido, não há limite de consulta.',
-          corpo: campo('Máximo de dias', html`<input name="dias" type="number" min="1" step="1" value="${ctx.store.config.dashboardMaxDias ?? ''}">`),
-          rotuloOk: 'Salvar limite', onOk: v => { ctx.acoes.programacao.definirLimiteDashboard({ dias: v.dias }); toast('Limite atualizado e registrado no histórico'); },
-        }),
-      },
-    });
-    const muda = e => {
-      if (e.target.matches('[data-preset]')) {
-        lerRascunho(el);
-        if (rascunho.preset !== 'custom') Object.assign(rascunho, periodo(rascunho.preset, dados(ctx).ciclos, undefined, rascunho.obras));
-        ctx.rerender();
-      } else if (e.target.matches('[data-data]')) { lerRascunho(el); rascunho.preset = 'custom'; ctx.rerender(); }
-      else if (e.target.matches('[data-multi="obras"]')) { lerRascunho(el); rascunho.etapa = ''; ctx.rerender(); }
-      else lerRascunho(el);
-    };
-    el.addEventListener('change', muda);
-    const antes = desligar;
-    desligar = () => { antes(); el.removeEventListener('change', muda); };
-  },
-  onUnmount() { desligar?.(); },
-  render(el, ctx) {
-    const abertos = [...el.querySelectorAll('details.multi')].map(d => d.open);
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`);
-    el.querySelectorAll('details.multi').forEach((d, i) => { if (abertos[i]) d.open = true; });
-  },
-};
+/** Liga os cliques e mudanças dos filtros. Retorna a função que desliga. */
+export function ligarProgramacao(el, ctx) {
+  const desligarCliques = delegar(el, {
+    cliques: {
+      aplicar: () => { lerRascunho(el); aplicar(ctx, rascunho); },
+      'limpar-filtros': () => aplicar(ctx, filtrosPadrao(dados(ctx).ciclos)),
+      pdf: () => exportarPDF(ctx),
+      limite: () => modal({
+        titulo: 'Limite de período do Dashboard', descricao: 'Configuração do host. Sem valor definido, não há limite de consulta.',
+        corpo: campo('Máximo de dias', html`<input name="dias" type="number" min="1" step="1" value="${ctx.store.config.dashboardMaxDias ?? ''}">`),
+        rotuloOk: 'Salvar limite', onOk: v => { ctx.acoes.programacao.definirLimiteDashboard({ dias: v.dias }); toast('Limite atualizado e registrado no histórico'); },
+      }),
+    },
+  });
+  const muda = e => {
+    if (!e.target.closest('[data-filtros]')) return;
+    filtrosAbertos = true; // está configurando: a caixa continua aberta ao redesenhar
+    if (e.target.matches('[data-preset]')) {
+      lerRascunho(el);
+      if (rascunho.preset !== 'custom') Object.assign(rascunho, periodo(rascunho.preset, dados(ctx).ciclos, undefined, rascunho.obras));
+      ctx.rerender();
+    } else if (e.target.matches('[data-data]')) { lerRascunho(el); rascunho.preset = 'custom'; ctx.rerender(); }
+    else if (e.target.matches('[data-multi="obras"]')) { lerRascunho(el); rascunho.etapa = ''; ctx.rerender(); }
+    else lerRascunho(el);
+  };
+  // Lembra se a caixa de filtros está aberta (para não fechar ao redesenhar a tela).
+  const alterna = e => {
+    const resumo = e.target.closest('[data-caixa-filtros] > summary');
+    if (resumo) filtrosAbertos = !resumo.parentElement.open; // o clique acontece antes de abrir/fechar
+  };
+  el.addEventListener('change', muda);
+  el.addEventListener('click', alterna, true);
+  return () => { desligarCliques(); el.removeEventListener('change', muda); el.removeEventListener('click', alterna, true); };
+}
+
+/** Guarda/restaura quais listas de múltipla escolha estavam abertas antes de redesenhar. */
+export function lembrarListasAbertas(el) {
+  const abertos = [...el.querySelectorAll('details.multi')].map(d => d.open);
+  return () => el.querySelectorAll('details.multi').forEach((d, i) => { if (abertos[i]) d.open = true; });
+}

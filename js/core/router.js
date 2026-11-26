@@ -66,6 +66,8 @@ export function criarRoteador({ container, contexto }) {
     const permitidas = abasPermitidas(u);
     const id = idPedido || permitidas[0]?.id;
     if (!id) { desmontar(); semAcesso('Sem abas liberadas', 'Solicite ao host a liberação de pelo menos uma aba.'); return; }
+    const alias = config.abas.find(a => (a.aliases || []).includes(id));
+    if (alias) { location.replace('#/' + [alias.id, ...params].join('/')); return; } // endereço antigo de aba que mudou de nome
     const aba = config.abas.find(a => a.id === id);
     if (!aba) { desmontar(); semAcesso('Aba não encontrada', `A aba "${id}" não está registrada em config/abas.json.`); return; }
     if (!pode(u, id)) { desmontar(); semAcesso('Acesso não autorizado', 'Solicite ao host a liberação desta aba.'); publicar('aba', { id, titulo: aba.titulo }); return; }

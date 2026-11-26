@@ -52,24 +52,23 @@ desabilitados, e a gravação também é recusada pelas regras (a tentativa fica
 
 Ao abrir pela primeira vez num navegador, o sistema carrega **dados de demonstração**: obras Estaca
 Torpedo e Vasos de Pressão, OPs, FAs, itens T-24…T-29 e T-35, e ensaios. Para trocá-los, vá em
-**Configurações › Dados e backup**, que tem os botões *Começar vazio* e *Restaurar demonstração*.
+**Configurações › Dados e backup**, que tem o botão *Limpar dados*.
 
 ## 3. Abas
 
 | Aba | O que faz |
 |---|---|
-| Início | Resumo de OPs e FAs por status, atrasos (OPs, FAs e itens), alertas e últimas movimentações |
-| Dashboard | Indicadores filtrados por período, status, obra, etapa e tipo de ensaio, com exportação em PDF |
+| Dashboard | Resumo de OPs e FAs por status, atrasos, alertas e últimas movimentações; abaixo, o acompanhamento da programação com filtros recolhidos (período, status, obra, etapa, tipo de ensaio) e exportação em PDF |
 | Programação | Ciclos tri-semanais por obra, atingimento × meta, itens, efetivo por turno e etapas adicionais (retrabalho) |
 | PCP | Ordens de Produção (cadastro, produção, ocorrência, inspeção, liberação) e FAs (frentes/ações entre setores) |
 | Produção | Etapas/frentes (Soldagem, Montagem, Pintura…) com responsável; itens atribuídos por arrastar e soltar; OPs em produção |
 | Projetos/Obras | Obras, sub-projetos, ocultar/arquivar, pedidos (contrato aditivado, cada um com sua data de entrega) e itens numerados |
 | Almoxarifado | Materiais, entradas e saídas, solicitações da produção e consumo por item |
 | Qualidade | Inspeções de OPs, laudos de itens e ensaios (execução → NII → NIII) |
-| Notificações | Avisos entre setores e providências |
+| Notificações | Avisos entre setores e providências (acesso pelo sino no topo) |
 | Histórico | Movimentações e auditoria completa (quem, quando, antes e depois) |
 | Relatórios | Desempenho por setor, motivos de parada, qualidade, materiais e FAs |
-| Configurações (host) | Limites de ensaio, políticas de observação, etapas e responsáveis, backup e lista de abas |
+| Configurações (host) | Cartões para cada configuração: aparência (tema claro/escuro), limites de ensaio, observação, etapas e responsáveis, Dashboard, backup e lista de abas |
 | Usuários e permissões (host) | Cadastro de usuários, áreas, funções e acessos |
 
 ## 4. Estrutura

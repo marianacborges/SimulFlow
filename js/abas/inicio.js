@@ -1,4 +1,5 @@
-// Aba Início/Painel: resumo de OPs e FAs por status e atrasos, alertas e últimas movimentações.
+// Aba Dashboard (Início): resumo de OPs e FAs por status e atrasos, alertas e últimas movimentações e,
+// logo abaixo, o acompanhamento da programação com filtros recolhidos (componentes/painel-programacao.js).
 import { html, cabecalho, stat, badge, vazio, rodape, delegar, botao } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, hoje } from '../core/util.js';
@@ -7,9 +8,11 @@ import { tabelaOPs, cliquesOP } from '../componentes/op-acoes.js';
 import { rosca, barras } from '../componentes/graficos.js';
 import { opAtrasada, faAtrasada, statusExibidoFA, itemAtrasado, percentual, diasAtraso } from '../data/regras.js';
 import { tom } from '../core/ui.js';
+import { secaoProgramacao, ligarProgramacao, lembrarListasAbertas } from '../componentes/painel-programacao.js';
 
 const estado = { op: { busca: '', status: '', setor: '', pagina: 1 } };
 let desligar = null;
+let desligarProgramacao = null;
 const pad = n => String(n).padStart(2, '0');
 
 function view(ctx) {
@@ -31,7 +34,7 @@ function view(ctx) {
     const doObra = ops.filter(op => op.obraId === o.id || store.obter('obras', op.obraId)?.parentId === o.id);
     return { rotulo: o.nome, total: doObra.reduce((s, x) => s + x.planejado, 0), feito: doObra.reduce((s, x) => s + x.produzido, 0) };
   }).filter(l => l.total);
-  return html`${cabecalho('Início', 'Visão geral das OPs, FAs e da integração entre os setores.', html`<span class="badge neutral">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`)}
+  return html`${cabecalho('Dashboard', 'Visão geral das OPs, FAs, programação e integração entre os setores.', html`<span class="badge neutral">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`)}
     <h2 style="margin-bottom:10px">Ordens de Produção</h2>
     <div class="stats">${stat({ rotulo: 'Total de ordens', valor: pad(ops.length), icone: 'clipboard', rodape: 'Ordens cadastradas no sistema', href: linkOP('') })}
       ${stat({ rotulo: 'Em andamento', valor: pad(ops.filter(o => o.status === 'Em andamento').length), icone: 'play', rodape: 'Produção em execução', href: linkOP('Em andamento') })}
@@ -69,13 +72,16 @@ function view(ctx) {
 
 export default {
   id: 'inicio',
-  titulo: 'Início',
+  titulo: 'Dashboard',
   onMount(el, ctx) {
     const ctl = controleEstado(estado, ctx);
     desligar = delegar(el, { mudanca: ctl.mudanca, cliques: { ...ctl.cliques, ...cliquesOP(ctx) } });
+    desligarProgramacao = ligarProgramacao(el, ctx);
   },
-  onUnmount() { desligar?.(); },
+  onUnmount() { desligar?.(); desligarProgramacao?.(); },
   render(el, ctx) {
-    el.innerHTML = String(html`<main class="page">${view(ctx)}${rodape()}</main>`);
+    const restaurar = lembrarListasAbertas(el);
+    el.innerHTML = String(html`<main class="page">${view(ctx)}${secaoProgramacao(ctx)}${rodape()}</main>`);
+    restaurar();
   },
 };

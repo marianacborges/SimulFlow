@@ -50,6 +50,8 @@ const P = {
   move: '<path d="M5 12h14M15 8l4 4-4 4M9 8l-4 4 4 4"/>',
   hidden: '<path d="M3 3l18 18"/><path d="M2 12s4-7 10-7c1.7 0 3.2.5 4.5 1.3M22 12s-4 7-10 7c-1.7 0-3.2-.5-4.5-1.3"/>',
   live: '<circle cx="12" cy="12" r="4"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>',
   nfc: '<rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M9.5 9a3.5 3.5 0 010 6"/><path d="M12.5 7a6.5 6.5 0 010 10"/>',
   workflow:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 6.5h4a3 3 0 013 3V14"/>',
 };

@@ -1,16 +1,174 @@
 [
-  {"id": "inicio", "titulo": "Início", "icone": "home", "modulo": "inicio.js", "ordem": 1, "visivel": true, "perfis": ["todos"], "entidade": null, "descricao": "Resumo de OPs e FAs por status e atrasos"},
-  {"id": "dashboard", "titulo": "Dashboard", "icone": "chart", "modulo": "dashboard.js", "ordem": 2, "visivel": true, "perfis": ["todos"], "entidade": null, "descricao": "Dashboard filtrado por período, obra e status"},
-  {"id": "programacao", "titulo": "Programação", "icone": "target", "modulo": "programacao.js", "ordem": 3, "visivel": true, "perfis": ["todos"], "entidade": "ciclo", "descricao": "Programação tri-semanal por obra, itens, efetivo e etapas adicionais"},
-  {"id": "pcp", "titulo": "PCP", "icone": "clipboard", "modulo": "pcp.js", "ordem": 4, "visivel": true, "perfis": ["todos"], "entidade": "op", "descricao": "Ordens de produção (OPs) e frentes/ações (FAs)"},
-  {"id": "presenca", "titulo": "Presença operacional", "icone": "nfc", "modulo": "presenca.js", "ordem": 5, "visivel": true, "perfis": ["PCP"], "entidade": null, "descricao": "Colaboradores presentes no dia (tags NFC), planilha do dia e histórico"},
-  {"id": "producao", "titulo": "Produção", "icone": "factory", "modulo": "producao.js", "ordem": 6, "visivel": true, "perfis": ["todos"], "entidade": "etapa", "descricao": "Etapas/frentes de trabalho com responsável e itens por etapa"},
-  {"id": "projetos", "titulo": "Projetos/Obras", "icone": "folder", "modulo": "projetos.js", "ordem": 7, "visivel": true, "perfis": ["todos"], "entidade": "obra", "descricao": "Obras, sub-projetos, pedidos e itens"},
-  {"id": "almoxarifado", "titulo": "Almoxarifado", "icone": "boxes", "modulo": "almoxarifado.js", "ordem": 8, "visivel": true, "perfis": ["todos"], "entidade": "material", "descricao": "Materiais, movimentações e consumo"},
-  {"id": "qualidade", "titulo": "Qualidade", "icone": "shield", "modulo": "qualidade.js", "ordem": 9, "visivel": true, "perfis": ["todos"], "entidade": "ensaio", "descricao": "Inspeções de OPs, laudos de itens e ensaios NII/NIII"},
-  {"id": "notificacoes", "titulo": "Notificações", "icone": "bell", "modulo": "notificacoes.js", "ordem": 10, "visivel": true, "perfis": ["todos"], "entidade": null, "descricao": "Comunicação entre setores e providências"},
-  {"id": "historico", "titulo": "Histórico", "icone": "history", "modulo": "historico.js", "ordem": 11, "visivel": true, "perfis": ["todos"], "entidade": null, "descricao": "Rastreabilidade das movimentações e auditoria"},
-  {"id": "relatorios", "titulo": "Relatórios", "icone": "report", "modulo": "relatorios.js", "ordem": 12, "visivel": true, "perfis": ["todos"], "entidade": null, "descricao": "Indicadores de produção, ocorrências e qualidade"},
-  {"id": "configuracoes", "titulo": "Configurações", "icone": "settings", "modulo": "configuracoes.js", "ordem": 13, "visivel": true, "perfis": ["host"], "entidade": "tipoEnsaio", "descricao": "Limites de ensaio, políticas, etapas, dados e backup"},
-  {"id": "usuarios", "titulo": "Usuários e permissões", "icone": "users", "modulo": "usuarios.js", "ordem": 14, "visivel": true, "perfis": ["host"], "entidade": "usuario", "descricao": "Cadastro de usuários, áreas, funções e acessos"}
+  {
+    "id": "inicio",
+    "titulo": "Dashboard",
+    "icone": "chart",
+    "modulo": "inicio.js",
+    "ordem": 1,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": null,
+    "descricao": "OPs e FAs por status, atrasos, alertas e acompanhamento da programação",
+    "aliases": [
+      "dashboard"
+    ]
+  },
+  {
+    "id": "programacao",
+    "titulo": "Programação",
+    "icone": "target",
+    "modulo": "programacao.js",
+    "ordem": 2,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "ciclo",
+    "descricao": "Programação tri-semanal por obra, itens, efetivo e etapas adicionais"
+  },
+  {
+    "id": "pcp",
+    "titulo": "PCP",
+    "icone": "clipboard",
+    "modulo": "pcp.js",
+    "ordem": 3,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "op",
+    "descricao": "Ordens de produção (OPs) e frentes/ações (FAs)"
+  },
+  {
+    "id": "presenca",
+    "titulo": "Presença operacional",
+    "icone": "nfc",
+    "modulo": "presenca.js",
+    "ordem": 4,
+    "visivel": true,
+    "perfis": [
+      "PCP"
+    ],
+    "entidade": null,
+    "descricao": "Colaboradores presentes no dia (tags NFC), planilha do dia e histórico"
+  },
+  {
+    "id": "producao",
+    "titulo": "Produção",
+    "icone": "factory",
+    "modulo": "producao.js",
+    "ordem": 5,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "etapa",
+    "descricao": "Etapas/frentes de trabalho com responsável e itens por etapa"
+  },
+  {
+    "id": "projetos",
+    "titulo": "Projetos/Obras",
+    "icone": "folder",
+    "modulo": "projetos.js",
+    "ordem": 6,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "obra",
+    "descricao": "Obras, sub-projetos, pedidos e itens"
+  },
+  {
+    "id": "almoxarifado",
+    "titulo": "Almoxarifado",
+    "icone": "boxes",
+    "modulo": "almoxarifado.js",
+    "ordem": 7,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "material",
+    "descricao": "Materiais, movimentações e consumo"
+  },
+  {
+    "id": "qualidade",
+    "titulo": "Qualidade",
+    "icone": "shield",
+    "modulo": "qualidade.js",
+    "ordem": 8,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": "ensaio",
+    "descricao": "Inspeções de OPs, laudos de itens e ensaios NII/NIII"
+  },
+  {
+    "id": "notificacoes",
+    "titulo": "Notificações",
+    "icone": "bell",
+    "modulo": "notificacoes.js",
+    "ordem": 9,
+    "visivel": false,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": null,
+    "descricao": "Comunicação entre setores e providências"
+  },
+  {
+    "id": "historico",
+    "titulo": "Histórico",
+    "icone": "history",
+    "modulo": "historico.js",
+    "ordem": 10,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": null,
+    "descricao": "Rastreabilidade das movimentações e auditoria"
+  },
+  {
+    "id": "relatorios",
+    "titulo": "Relatórios",
+    "icone": "report",
+    "modulo": "relatorios.js",
+    "ordem": 11,
+    "visivel": true,
+    "perfis": [
+      "todos"
+    ],
+    "entidade": null,
+    "descricao": "Indicadores de produção, ocorrências e qualidade"
+  },
+  {
+    "id": "configuracoes",
+    "titulo": "Configurações",
+    "icone": "settings",
+    "modulo": "configuracoes.js",
+    "ordem": 12,
+    "visivel": true,
+    "perfis": [
+      "host"
+    ],
+    "entidade": "tipoEnsaio",
+    "descricao": "Limites de ensaio, políticas, etapas, dados e backup"
+  },
+  {
+    "id": "usuarios",
+    "titulo": "Usuários e permissões",
+    "icone": "users",
+    "modulo": "usuarios.js",
+    "ordem": 13,
+    "visivel": true,
+    "perfis": [
+      "host"
+    ],
+    "entidade": "usuario",
+    "descricao": "Cadastro de usuários, áreas, funções e acessos"
+  }
 ]

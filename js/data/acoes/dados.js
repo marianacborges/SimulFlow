@@ -23,9 +23,9 @@ export function restaurarDemonstracao(store, u) {
 
 /** Apaga os dados de negócio (obras, OPs, FAs…) mantendo usuários e auditoria. */
 export function comecarVazio(store, u) {
-  autorizar(store, u, ehHost(u), 'começar vazio', {}, 'Ação exclusiva do host');
+  autorizar(store, u, ehHost(u), 'limpar dados', {}, 'Ação exclusiva do host');
   store.substituir(manterUsuarios(store, { config: { contadores: { fa: 0 } } }));
-  store.transacao(() => auditar(store, u, { acao: 'Dados de negócio limpos (começar vazio)', entidade: 'sistema' }));
+  store.transacao(() => auditar(store, u, { acao: 'Dados de negócio limpos (Limpar dados)', entidade: 'sistema' }));
 }
 
 /** Importa um backup completo (substitui tudo, inclusive usuários). */

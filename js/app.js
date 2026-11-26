@@ -8,6 +8,7 @@ import * as auth from './core/auth.js';
 import { pode, regrasAcesso, ehHost } from './core/permissoes.js';
 import { criarRoteador } from './core/router.js';
 import { assinar } from './core/eventos.js';
+import { aplicarTema, alternarTema, temaEfetivo } from './core/tema.js';
 import { html, ic, toast, modal, campo } from './core/ui.js';
 import { iniciais, combinaTexto } from './core/util.js';
 import { combinaOP, statusExibidoOP, statusExibidoFA } from './data/regras.js';
@@ -195,8 +196,9 @@ function montarShell() {
         <button class="btn ghost icon hide-small" data-recolher title="Recolher ou expandir menu" aria-label="Recolher ou expandir menu">${ic('collapse')}</button>
         <span>Área de trabalho</span>${ic('chevronRight', 12)}<strong id="titulo-aba"></strong></div>
       <div class="top-actions"><div class="top-search">${ic('search')}<input id="busca-geral" type="search" placeholder="Buscar OP, FA ou item..." aria-label="Busca geral"><div class="top-search-results" id="resultados" hidden></div></div>
-        <a href="#/notificacoes" class="btn ghost icon notify" id="sino" title="Notificações" aria-label="Notificações">${ic('bell', 18)}<i class="notify-dot" hidden></i></a>
+        <a href="#/notificacoes" class="btn ghost icon notify" id="sino" title="Notificações" aria-label="Notificações">${ic('bell', 18)}<span class="notify-count" hidden></span></a>
         <div class="user-block"><span class="avatar" id="avatar"></span><div class="user-text"><strong id="nome-usuario"></strong><small id="perfil-usuario"></small></div>
+          <button class="btn ghost icon" data-tema></button>
           <button class="btn ghost icon" data-senha title="Alterar minha senha" aria-label="Alterar minha senha">${ic('key')}</button>
           <button class="btn ghost icon" data-sair title="Sair" aria-label="Sair">${ic('logout')}</button></div></div>
     </header><div id="app" class="app-main"></div></div><div class="scrim" data-menu></div></div>`);
@@ -205,6 +207,8 @@ function montarShell() {
   raiz.querySelector('[data-recolher]').addEventListener('click', () => shell.classList.toggle('collapsed'));
   raiz.querySelector('[data-sair]').addEventListener('click', () => encerrar(''));
   raiz.querySelector('[data-senha]').addEventListener('click', alterarMinhaSenha);
+  raiz.querySelector('[data-tema]').addEventListener('click', alternarTema);
+  atualizarBotaoTema();
   raiz.querySelector('#nav').addEventListener('click', e => { if (e.target.closest('a')) shell.classList.remove('mobile-open'); });
   ligarBuscaGeral();
   atualizarShell();
@@ -218,7 +222,19 @@ assinar('aba', ({ id, titulo }) => {
   if (t) t.textContent = titulo;
   document.title = `${titulo} | ${config.app.nome}`;
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.aba === id));
+  document.getElementById('sino')?.classList.toggle('ativo', id === 'notificacoes');
 });
+
+function atualizarBotaoTema() {
+  const b = document.querySelector('[data-tema]');
+  if (!b) return;
+  const escuro = temaEfetivo() === 'escuro';
+  const rotulo = escuro ? 'Mudar para o tema claro' : 'Mudar para o tema escuro';
+  b.innerHTML = String(ic(escuro ? 'sun' : 'moon'));
+  b.title = rotulo;
+  b.setAttribute('aria-label', rotulo);
+}
+assinar('tema', atualizarBotaoTema);
 
 function naoLidas(u) {
   return store.filtrar('eventos', e => !e.lida && (pode(u, 'notificacoes') || e.destinatarioId === u.id)).length;
@@ -234,7 +250,13 @@ function atualizarShell() {
   document.getElementById('avatar').textContent = iniciais(u.nome);
   document.getElementById('nome-usuario').textContent = u.nome;
   document.getElementById('perfil-usuario').textContent = u.host ? 'Host / Administrador' : u.area;
-  document.querySelector('#sino .notify-dot').hidden = !n;
+  const contador = document.querySelector('#sino .notify-count');
+  contador.hidden = !n;
+  contador.textContent = n > 99 ? '99+' : String(n);
+  const sino = document.getElementById('sino');
+  sino.setAttribute('aria-label', n ? `Notificações: ${n} não lidas` : 'Notificações');
+  sino.title = sino.getAttribute('aria-label');
+  sino.classList.toggle('ativo', atual === 'notificacoes');
   document.getElementById('sino').hidden = !pode(u, 'notificacoes');
   document.getElementById('titulo-aba').textContent = tituloAtual;
 }
@@ -264,4 +286,5 @@ function ligarBuscaGeral() {
   document.addEventListener('click', e => { if (!e.target.closest('.top-search')) caixa.hidden = true; });
 }
 
+aplicarTema();
 iniciar();
