@@ -347,6 +347,8 @@ function empacotar() {
   }
   const css = ['base', 'layout', 'componentes'].map(n => fs.readFileSync(path.join(RAIZ, `css/${n}.css`), 'utf8')).join('\n');
   const favicon = 'data:image/png;base64,' + fs.readFileSync(path.join(RAIZ, 'favicon.png')).toString('base64');
+  // Imagens de img/ citadas no código ('img/x.png') vão embutidas no arquivo único.
+  const imagem = n => 'data:image/png;base64,' + fs.readFileSync(path.join(RAIZ, 'img', n)).toString('base64');
   const registroAbas = abas.map(a => `${JSON.stringify(a.modulo)}: __req(${JSON.stringify(path.join('js/abas', a.modulo))}).default`).join(',\n  ');
   const cabeca = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8').match(/<head>([\s\S]*?)<\/head>/)[1]
     .replace(/<link rel="stylesheet"[^>]*>\s*/g, '').replace(/href="favicon.png"/, `href="${favicon}"`)
@@ -365,7 +367,7 @@ __req("js/app.js");
 })();`;
   // O app.js é o último a executar; as abas precisam do config antes de serem registradas,
   // por isso o registro acontece antes de __req("js/app.js") (que só usa o config no iniciar()).
-  return `<!doctype html>\n<html lang="pt-BR">\n<head>${cabeca}<style>\n${css.replace(/url\(["']?favicon\.png["']?\)/g, `url(${favicon})`)}\n</style>\n</head>\n<body>\n  <div id="raiz"></div>\n<script>\n${script.replace(/<\/script/gi, '<\\/script').replace(/src="favicon\.png"/g, `src="${favicon}"`).replace(/'favicon\.png'/g, `'${favicon}'`)}\n</script>\n</body>\n</html>\n`;
+  return `<!doctype html>\n<html lang="pt-BR">\n<head>${cabeca}<style>\n${css.replace(/url\(["']?favicon\.png["']?\)/g, `url(${favicon})`)}\n</style>\n</head>\n<body>\n  <div id="raiz"></div>\n<script>\n${script.replace(/<\/script/gi, '<\\/script').replace(/src="favicon\.png"/g, `src="${favicon}"`).replace(/'favicon\.png'/g, `'${favicon}'`).replace(/'img\/([\w-]+\.png)'/g, (_, n) => `'${imagem(n)}'`)}\n</script>\n</body>\n</html>\n`;
 }
 
 // ---------------- Execução ----------------

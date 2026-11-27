@@ -5,6 +5,7 @@ import { html, campo, ic, toast } from '../core/ui.js';
 import { conexao, salvarConexao, limparConexao, testarConexao, chamar } from './conexao.js';
 import { aoPoderInstalar, instalarApp } from '../core/instalar.js';
 import { montarLeitor } from './leitor.js';
+import { logoAcesso } from '../core/logo.js';
 
 const raiz = document.getElementById('leitura');
 
@@ -22,7 +23,7 @@ async function lerLinkDeConfiguracao() {
 }
 
 function telaConfigurar(mensagem = '') {
-  raiz.innerHTML = String(html`<section class="panel leitor-config"><h1>Configurar este celular</h1>
+  raiz.innerHTML = String(html`<section class="panel leitor-config">${logoAcesso()}<h1>Configurar este celular</h1>
     <p class="muted">Abra o link enviado pelo Planejamento ou informe a URL do app da Web e o token deste aparelho.</p>
     <form data-config class="auth-form">${campo('URL do app da Web', html`<input name="url" required placeholder="https://script.google.com/macros/s/…/exec">`, { obrig: true })}
       ${campo('Token de acesso', html`<input name="token" required autocomplete="off" placeholder="sf_…">`, { obrig: true })}

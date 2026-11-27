@@ -12,6 +12,7 @@ import { pode, regrasAcesso, ehHost } from './core/permissoes.js';
 import { criarRoteador } from './core/router.js';
 import { assinar } from './core/eventos.js';
 import { aplicarTema, alternarTema, temaEfetivo } from './core/tema.js';
+import { logoAcesso } from './core/logo.js';
 import { html, ic, toast, modal, campo } from './core/ui.js';
 import { iniciais, combinaTexto } from './core/util.js';
 import { combinaOP, statusExibidoOP, statusExibidoFA } from './data/regras.js';
@@ -107,7 +108,7 @@ function encerrar(msg) {
 // ---------------- Telas de acesso ----------------
 
 function marca() {
-  return html`<div class="auth-brand"><img src="favicon.png" alt="" width="56" height="56"><div><strong>${config.app.nome}</strong><span>${config.app.subtitulo}</span></div></div>`;
+  return logoAcesso(`${config.app.nome} — ${config.app.subtitulo}`);
 }
 
 function campoSenha(nome, rotulo, auto = 'current-password') {
