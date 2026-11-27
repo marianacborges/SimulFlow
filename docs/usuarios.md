@@ -4,7 +4,7 @@ Os dados do SimulFlow (OPs, FAs, obras…) ficam em cada aparelho. As **contas**
 planilha Google só de usuários, separada da planilha da Presença. Assim a mesma conta entra em
 qualquer aparelho conectado.
 
-- A planilha guarda login, e-mail, nome e a conta em código.
+- A planilha guarda login, nome e a conta em código. O cadastro não tem e-mail.
 - A senha fica só como hash: nunca aparece legível.
 - Usuários são criados e alterados só pelo SimulFlow (Usuários e permissões); a planilha recebe tudo sozinha.
 
@@ -27,24 +27,45 @@ qualquer aparelho conectado.
 Em **Usuários e permissões › Planilha de usuários › Conectar**, cole a URL e o token admin. As contas
 deste aparelho sobem para a planilha, e a lista de acessos aparece.
 
-## 3. Cada aparelho novo
+## 3. Token de leitura, embutido no site
 
-1. No seu aparelho, clique em **Novo acesso para aparelho**, informe o nome (ex.: PC da Produção) e
-   copie a URL e o token mostrados.
-2. No aparelho novo, toque em **Já tenho conta** (no Primeiro acesso) ou em **Entrar com conta de outro
-   aparelho** (na tela Entrar).
-3. Cole a URL e o token e entre com o usuário e a senha.
+Com ele, qualquer aparelho entra com usuário e senha, sem configurar nada.
 
-Depois de conectado, o aparelho:
-- busca as contas mais novas a cada abertura e a cada login;
-- envia sozinho toda conta nova, edição e troca de senha.
+1. Na planilha, use **SimulFlow Contas › 2. Gerar token de acesso…** com o perfil **leitura**
+   (ou, no SimulFlow, **Usuários e permissões › Planilha de usuários › Novo acesso › Leitura**).
+2. Coloque a URL `/exec` e esse token em `config/app.json`:
 
-Vale o registro mais novo de cada conta.
+   ```json
+   "planilhaUsuarios": { "url": "https://script.google.com/macros/s/…/exec", "token": "sfc_…" }
+   ```
+
+Com o site publicado, um aparelho novo:
+- já abre na tela **Entrar**, porque as contas chegam da planilha na abertura;
+- se a planilha não responder a tempo, mostra **Primeiro acesso**. Nesse caso, **Já tenho conta** pede só
+  usuário e senha;
+- busca as contas mais novas a cada login.
+
+O que o token de leitura pode fazer:
+
+| Ação | Token de leitura (site) | Token admin (host) |
+| --- | --- | --- |
+| Ler as contas e entrar | sim | sim |
+| Trocar a **própria** senha (provando a senha atual) | sim | sim |
+| Criar, editar ou desativar contas | não | sim |
+| Criar e revogar acessos | não | sim |
+
+A troca da própria senha, seja a obrigatória depois da senha provisória ou a de **Alterar minha senha**, vai
+para a planilha. Para isso, a planilha guarda na coluna **Verificador** um código da senha (SHA-256 de
+`login:senha`), que nunca sai pela API. O verificador é gravado quando o host define uma senha provisória
+ou entra no próprio aparelho. Se uma conta antiga ainda não tiver verificador, o host define uma senha
+provisória nova.
 
 ## Segurança
 
-Quem tem um token consegue ler os hashes das senhas. Revogue o acesso de um aparelho perdido em
-**Usuários e permissões › Planilha de usuários**. Os tokens ficam na aba Acessos só como hash.
+O token de leitura fica visível no código público do site. Com ele, qualquer pessoa consegue ler a lista
+de usuários (login e nome) e os hashes das senhas (PBKDF2, 120 000 iterações), mas não consegue gravar nada.
+Use senhas fortes. Se precisar trocar o token, revogue-o em **Usuários e permissões › Planilha de
+usuários**, gere outro e atualize o `config/app.json`. Os tokens ficam na aba Acessos só como hash.
 
 ## Testar sem conta Google
 

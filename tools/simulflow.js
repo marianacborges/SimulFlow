@@ -74,7 +74,7 @@ const comandos = {
       g.relogio.definir(inicio);
     }
     const tokens = contas
-      ? { admin: g.ctx.criarAcessoContas('Host (emulador)', 'admin').token, aparelho: g.ctx.criarAcessoContas('Outro aparelho (emulador)', 'aparelho').token }
+      ? { admin: g.ctx.criarAcessoContas('Host (emulador)', 'admin').token, leitura: g.ctx.criarAcessoContas('Site (emulador)', 'leitura').token }
       : { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor') };
     if (!vazio && !contas) {
       for (const [nome, matricula, funcao, tag] of [['Ana Souza', '00123', 'Soldador', '04:A1:B2:C3'], ['Bruno Lima', '00456', 'Montador', '04:D4:E5:F6'], ['Carla Dias', '00789', 'Soldador', '04:11:22:33'], ['Diego Alves', '01011', 'Pintor', '']]) {

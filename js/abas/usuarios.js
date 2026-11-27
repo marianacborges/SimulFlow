@@ -5,7 +5,7 @@ import { combinaTexto, dataHora } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
 import { permissoesPadrao, abaSoHost } from '../core/permissoes.js';
 import { gerarCredencial, validarSenha } from '../core/auth.js';
-import { conexaoContas, salvarConexaoContas, limparConexaoContas, testarConexaoContas, podeContas, adminContas, enviarContas, puxarContas, listarAcessosContas, criarAcessoContas, revogarAcessoContas, ultimaSincronizacao } from '../core/contas.js';
+import { conexaoContas, conexaoContasLocal, registrarVerificador, salvarConexaoContas, limparConexaoContas, testarConexaoContas, podeContas, adminContas, enviarContas, puxarContas, listarAcessosContas, criarAcessoContas, revogarAcessoContas, ultimaSincronizacao } from '../core/contas.js';
 
 const estado = { f: { busca: '' } };
 const planilha = { acessos: null, erro: '', carregando: false };
@@ -23,7 +23,6 @@ function formUsuario(ctx, u = null) {
     corpo: html`<div class="form-grid">
       ${campo('Usuário (login)', html`<input name="login" required autocomplete="off" value="${u?.login || ''}">`, { obrig: true, ajuda: 'Pode ser um nome de usuário ou e-mail.' })}
       ${campo('Nome', html`<input name="nome" required maxlength="100" value="${u?.nome || ''}">`, { obrig: true })}
-      ${campo('E-mail', html`<input name="email" type="email" autocomplete="off" maxlength="120" value="${u?.email || ''}" placeholder="nome@empresa.com">`)}
       ${campo('Área', seletor('area', config.app.areas, u?.area || config.app.areas[0], 'data-area'), { obrig: true })}
       ${campo(u ? 'Nova senha provisória (opcional)' : 'Senha provisória', html`<input name="senha" type="text" autocomplete="off" ${u ? '' : 'required'} placeholder="mín. ${config.app.senhaMinima} caracteres">`, { obrig: !u, ajuda: 'O usuário troca a senha no primeiro acesso.' })}
       <label class="toggle"><input type="checkbox" name="ativo"${u?.ativo === false ? '' : ' checked'}${proprio ? ' disabled' : ''}> Usuário ativo</label>
@@ -44,10 +43,15 @@ function formUsuario(ctx, u = null) {
       if (d.senha) { validarSenha(d.senha); credencial = await gerarCredencial(d.senha); }
       const permissoes = Object.fromEntries(Object.entries(d).filter(([k]) => k.startsWith('perm.')).map(([k, v]) => [k.slice(5), v]));
       ctx.acoes.usuarios.salvarUsuario({
-        id: u?.id, login: d.login, nome: d.nome, email: d.email, area: d.area, ativo: proprio ? true : d.ativo, host: proprio ? true : d.host,
+        id: u?.id, login: d.login, nome: d.nome, area: d.area, ativo: proprio ? true : d.ativo, host: proprio ? true : d.host,
         funcoes: d.funcoes || [], permissoes, obrasDashboard: d.obrasDashboard || [], credencial,
       });
       toast('Usuário salvo');
+      // Senha definida pelo host: a planilha guarda o verificador, para a pessoa poder trocá-la em qualquer aparelho.
+      if (d.senha && adminContas(conexaoContas())) {
+        enviarContas(ctx.store, conexaoContas(), true).then(() => registrarVerificador(d.login, d.senha))
+          .catch(e => toast('Usuário salvo neste aparelho, mas não na planilha de usuários: ' + e.message, 'erro'));
+      }
     },
   });
 }
@@ -55,7 +59,8 @@ function formUsuario(ctx, u = null) {
 // ---------------- Planilha de usuários (contas em todos os aparelhos) ----------------
 
 function painelPlanilha() {
-  const con = conexaoContas();
+  // Só a conexão do próprio aparelho (token admin); a embutida no site é de leitura, para entrar em outros aparelhos.
+  const con = conexaoContasLocal();
   if (!podeContas(con)) {
     return html`<details class="painel-filtros" data-caixa-planilha style="margin-bottom:16px"><summary>${ic('link')}<span class="painel-filtros-resumo"><strong>Planilha de usuários</strong> não conectada: as contas ficam só neste aparelho</span><span class="painel-filtros-acao">Conectar</span></summary>
       <form class="painel-filtros-corpo" data-form-planilha><div class="form-grid">
@@ -68,7 +73,7 @@ function painelPlanilha() {
     <p class="muted small" style="margin:6px 0 10px;word-break:break-all">Acesso ${con.nome} (${con.perfil}) · ${con.url}${quando ? ` · contas enviadas às ${quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}</p>
     ${planilha.erro ? html`<div class="warning-band erro-band">${planilha.erro}</div>` : ''}
     <div class="toolbar">${botao('Sincronizar agora', { acao: 'planilha-sincronizar', v: 'outline', icone: 'restore' })}
-      ${adminContas(con) ? botao('Novo acesso para aparelho', { acao: 'planilha-acesso-novo', icone: 'plus' }) : ''}
+      ${adminContas(con) ? botao('Novo acesso', { acao: 'planilha-acesso-novo', icone: 'plus' }) : ''}
       ${botao('Desconectar', { acao: 'planilha-desconectar', v: 'ghost', icone: 'x' })}</div>
     ${adminContas(con) && planilha.acessos ? html`<div class="table-wrap" style="margin-top:12px"><div class="table-scroll"><table><thead><tr><th>Aparelho</th><th>Perfil</th><th>Criado em</th><th>Último uso</th><th>Situação</th><th></th></tr></thead><tbody>
       ${planilha.acessos.map(a => html`<tr><td><strong>${a.nome}</strong></td><td>${a.perfil}</td><td>${dataHora(a.criadoEm)}</td><td>${a.ultimoUso ? dataHora(a.ultimoUso) : '—'}</td><td>${badge(a.ativo ? 'Ativo' : 'Desativado')}</td>
@@ -88,19 +93,21 @@ function mostrarTokenContas(acesso) {
   janela(`Acesso "${acesso.nome}" (${acesso.perfil})`, 'Copie agora: o token não será mostrado de novo.', html`
     ${campo('URL do app da Web', html`<input readonly value="${con.url}" data-copiar>`)}
     ${campo('Token', html`<input readonly value="${acesso.token}" data-copiar>`)}
-    <p class="muted small">No outro aparelho, toque em "Já tenho conta" (no Primeiro acesso) ou "Entrar com conta de outro aparelho" (na tela Entrar), cole a URL e o token e entre com o usuário e a senha.</p>`, false);
+    <p class="muted small">${acesso.perfil === 'leitura'
+      ? 'Este token vai embutido no site (config/app.json › planilhaUsuarios). Fica visível no código público, mas só lê as contas (as senhas estão em hash).'
+      : 'No outro computador do host: Usuários e permissões › Planilha de usuários › Conectar, com esta URL e este token.'}</p>`, false);
   document.querySelectorAll('[data-copiar]').forEach(i => i.addEventListener('focus', () => { i.select(); navigator.clipboard?.writeText(i.value).then(() => toast('Copiado'), () => {}); }));
 }
 
 function view(ctx) {
   const { store } = ctx;
-  const lista = store.filtrar('usuarios', u => combinaTexto(estado.f.busca, [u.nome, u.login, u.email, u.area])).sort((a, b) => a.nome.localeCompare(b.nome));
+  const lista = store.filtrar('usuarios', u => combinaTexto(estado.f.busca, [u.nome, u.login, u.area])).sort((a, b) => a.nome.localeCompare(b.nome));
   const funcao = id => config.app.funcoes.find(f => f.id === id)?.rotulo || id;
   return html`${cabecalho('Usuários e permissões', '', botao('Novo usuário', { acao: 'novo', icone: 'plus' }))}
     ${painelPlanilha()}
-    <div class="filters">${busca('f.busca', estado.f.busca, 'Buscar nome, login, e-mail ou área...')}<span class="filter-count">${lista.length} usuários</span></div>
-    <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nome / login</th><th>E-mail</th><th>Área</th><th>Perfil e funções</th><th>Abas com alteração</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
-      ${lista.map(u => html`<tr><td><strong>${u.nome}</strong><span class="subline">${u.login}</span></td><td>${u.email || html`<span class="muted">—</span>`}</td><td>${u.area}</td>
+    <div class="filters">${busca('f.busca', estado.f.busca, 'Buscar nome, login ou área...')}<span class="filter-count">${lista.length} usuários</span></div>
+    <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nome / login</th><th>Área</th><th>Perfil e funções</th><th>Abas com alteração</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
+      ${lista.map(u => html`<tr><td><strong>${u.nome}</strong><span class="subline">${u.login}</span></td><td>${u.area}</td>
         <td>${u.host ? badge('Host', 'blue') : ''}${(u.funcoes || []).map(f => html` <span class="sector-tag">${funcao(f)}</span>`)}${!u.host && !(u.funcoes || []).length ? html`<span class="muted">—</span>` : ''}</td>
         <td>${u.host ? 'Todas' : Object.entries(u.permissoes || {}).filter(([, v]) => v === 'editar').map(([k]) => config.abas.find(a => a.id === k)?.titulo || k).join(', ') || '—'}</td>
         <td>${badge(u.ativo ? 'Ativo' : 'Desativado')}${u.trocarSenha ? html`<span class="subline">Senha provisória</span>` : ''}</td>
@@ -137,9 +144,9 @@ export default {
           limparConexaoContas(); planilha.acessos = null; ctx.rerender();
         },
         'planilha-acesso-novo': () => modal({
-          titulo: 'Novo acesso para aparelho', descricao: 'Cada aparelho recebe o seu próprio token.',
+          titulo: 'Novo acesso', descricao: 'Cada acesso recebe o seu próprio token.',
           corpo: html`${campo('Nome do aparelho', html`<input name="nome" required placeholder="PC da Produção">`, { obrig: true })}
-            ${campo('Perfil', seletor('perfil', [{ v: 'aparelho', t: 'Aparelho — entra com as contas (computadores e celulares)' }, { v: 'admin', t: 'Admin — também cria e revoga acessos' }], 'aparelho'))}`,
+            ${campo('Perfil', seletor('perfil', [{ v: 'leitura', t: 'Leitura — vai embutido no site: qualquer aparelho entra com usuário e senha' }, { v: 'admin', t: 'Admin — outro computador do host, que cadastra e altera contas' }], 'leitura'))}`,
           rotuloOk: 'Criar acesso',
           onOk: async d => { const a = await criarAcessoContas(d.nome, d.perfil); planilha.acessos = null; carregarAcessos(ctx); mostrarTokenContas(a); },
         }),

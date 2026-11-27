@@ -42,6 +42,8 @@ export function criarStore(adaptador) {
   function normalizar(dados) {
     const e = estadoVazio();
     for (const c of COLECOES) e[c] = Array.isArray(dados?.[c]) ? dados[c] : [];
+    // O cadastro de usuários não guarda mais e-mail: descarta o de versões anteriores.
+    e.usuarios = e.usuarios.map(u => { if (!u || !('email' in u)) return u; const { email, ...resto } = u; return resto; });
     e.config = { ...configPadrao(), ...(dados?.config || {}) };
     e.config.politicas = { ...configPadrao().politicas, ...(dados?.config?.politicas || {}) };
     e.config.contadores = { ...configPadrao().contadores, ...(dados?.config?.contadores || {}) };
@@ -129,6 +131,7 @@ export function criarStore(adaptador) {
       let mudou = 0;
       for (const r of Array.isArray(lista) ? lista : []) {
         if (!r?.id || !chave(r) || !r.credencial) continue;
+        if ('email' in r) { r = { ...r }; delete r.email; }
         const i = estado.usuarios.findIndex(u => chave(u) === chave(r) || u.id === r.id);
         if (i < 0) { estado.usuarios.push(clonar(r)); mudou++; }
         else if (ts(r) > ts(estado.usuarios[i])) { estado.usuarios[i] = clonar(r); mudou++; }

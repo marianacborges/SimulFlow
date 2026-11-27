@@ -3,18 +3,20 @@
  * Guarda as contas do SimulFlow para a mesma conta entrar em qualquer aparelho conectado.
  * A senha nunca vem em texto: só o hash PBKDF2 gerado no navegador, que o próprio navegador confere ao entrar.
  * Cada aparelho usa um token (aba "Acessos", guardado só como hash SHA-256):
- *   - aparelho: lê e envia contas (computadores e celulares que fazem login);
+ *   - leitura: o token embutido no site; lê as contas e só grava a TROCA DA PRÓPRIA SENHA, provando a senha
+ *     atual (verificador guardado na coluna "Verificador", que nunca é devolvida pela API);
+ *   - aparelho: lê e envia contas;
  *   - admin: tudo isso, mais criar e revogar acessos (o host, na página Usuários e permissões).
  * Vale sempre o registro mais novo de cada conta (atualizadoEm, ou criadoEm se nunca foi editada).
  */
 var CONTAS = {
   ABA_USUARIOS: 'Usuários',
   ABA_ACESSOS: 'Acessos',
-  PERFIS: ['aparelho', 'admin'],
+  PERFIS: ['leitura', 'aparelho', 'admin'],
   VERSAO: '1.0.0',
   LIMITE_CELULA: 49000,
 };
-var CAB_USUARIOS = ['Login', 'E-mail', 'Nome', 'ID', 'Conta (JSON, senha em hash)', 'Atualizado em'];
+var CAB_USUARIOS = ['Login', 'Nome', 'ID', 'Conta (JSON, senha em hash)', 'Atualizado em', 'Verificador'];
 var CAB_ACESSOS = ['Nome', 'Perfil', 'Hash do token', 'Criado em', 'Ativo', 'Último uso'];
 
 function agoraAtual() { return new Date(); }
@@ -56,7 +58,27 @@ function prepararContas(ss) {
 function abaContas(nome) {
   var ss = planilhaContas();
   if (!ss.getSheetByName(CONTAS.ABA_USUARIOS) || !ss.getSheetByName(CONTAS.ABA_ACESSOS)) prepararContas(ss);
-  return ss.getSheetByName(nome);
+  var aba = ss.getSheetByName(nome);
+  // Planilha criada numa versão anterior: apaga a coluna E-mail (o cadastro não tem mais e-mail)...
+  if (nome === CONTAS.ABA_USUARIOS && texto(aba.getRange(1, 2).getValue()) === 'E-mail') removerColunaEmail(aba);
+  // ...e acrescenta o título da coluna nova (Verificador).
+  if (nome === CONTAS.ABA_USUARIOS && texto(aba.getRange(1, CAB_USUARIOS.length).getValue()) !== CAB_USUARIOS[CAB_USUARIOS.length - 1]) {
+    var r = aba.getRange(1, 1, 1, CAB_USUARIOS.length); r.setNumberFormat('@'); r.setValues([CAB_USUARIOS]); r.setFontWeight('bold');
+  }
+  return aba;
+}
+
+/** Apaga a coluna E-mail e tira o e-mail do JSON de cada conta. */
+function removerColunaEmail(aba) {
+  aba.deleteColumn(2);
+  lerLinhas(aba, 4).forEach(function (x) {
+    try {
+      var conta = JSON.parse(String(x.v[3] || ''));
+      if (!('email' in conta)) return;
+      delete conta.email;
+      gravarLinhaContas(aba, x.linha, [x.v[0], x.v[1], x.v[2], JSON.stringify(conta)]);
+    } catch (e) { /* linha sem JSON: segue */ }
+  });
 }
 
 function lerLinhas(aba, colunas) {
@@ -82,7 +104,7 @@ function acrescentar(aba, linhas) {
 
 function lerContas() {
   return lerLinhas(abaContas(CONTAS.ABA_USUARIOS), CAB_USUARIOS.length).filter(function (x) { return texto(x.v[0]); }).map(function (x) {
-    return { linha: x.linha, login: texto(x.v[0]).toLowerCase(), json: String(x.v[4] || ''), em: texto(x.v[5]) };
+    return { linha: x.linha, login: texto(x.v[0]).toLowerCase(), json: String(x.v[3] || ''), em: texto(x.v[4]), verificador: texto(x.v[5]) };
   });
 }
 
@@ -98,7 +120,6 @@ function validarContas(lista) {
     var login = texto(u.login).toLowerCase();
     if (!u.id || !login || login.length > 120) throw ErroContas('Conta sem identificador ou usuário');
     if (!u.credencial || typeof u.credencial !== 'object' || !u.credencial.hash) throw ErroContas('Conta ' + login + ' sem senha em hash');
-    if (u.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(u.email))) throw ErroContas('E-mail inválido na conta ' + login);
     if (JSON.stringify(u).length > CONTAS.LIMITE_CELULA) throw ErroContas('Conta ' + login + ' grande demais');
     if (vistos[login]) return false;
     vistos[login] = true;
@@ -114,15 +135,52 @@ function salvarContas(lista) {
   validarContas(lista).forEach(function (u) {
     var login = texto(u.login).toLowerCase();
     var em = String(u.atualizadoEm || u.criadoEm || '');
-    var linha = [login, texto(u.email), texto(u.nome), u.id, JSON.stringify(u), em];
     var atual = porLogin[login];
+    var conta = JSON.parse(JSON.stringify(u));
+    var verificador = texto(conta.verificador) || (atual ? atual.verificador : '');
+    delete conta.verificador;
+    delete conta.email;
+    var linha = [login, texto(conta.nome), conta.id, JSON.stringify(conta), em, verificador];
     if (atual && !(em > atual.em)) { ignorados++; return; }
     if (atual) gravarLinhaContas(aba, atual.linha, linha); else novos.push(linha);
-    porLogin[login] = { linha: atual ? atual.linha : -1, login: login, em: em };
+    porLogin[login] = { linha: atual ? atual.linha : -1, login: login, em: em, verificador: verificador };
     salvos++;
   });
   acrescentar(aba, novos);
   return { salvos: salvos, ignorados: ignorados };
+}
+
+/** Grava o verificador de uma conta (o host, que conhece a senha que acabou de definir ou com que entrou). */
+function definirVerificador(login, verificador) {
+  login = texto(login).toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(texto(verificador))) throw ErroContas('Verificador inválido');
+  var x = lerContas().filter(function (c) { return c.login === login; })[0];
+  if (!x) throw ErroContas('Conta não encontrada', 404);
+  var aba = abaContas(CONTAS.ABA_USUARIOS);
+  var r = aba.getRange(x.linha, CAB_USUARIOS.length);
+  r.setNumberFormat('@'); r.setValues([[texto(verificador)]]);
+  return { login: login };
+}
+
+/**
+ * Troca da própria senha a partir de qualquer aparelho (até com o token de leitura):
+ * prova = SHA-256 de "login:senha atual"; só grava se bater com o verificador guardado.
+ */
+function trocarSenhaPropria(corpo) {
+  var login = texto(corpo.login).toLowerCase();
+  var x = lerContas().filter(function (c) { return c.login === login; })[0];
+  if (!x) throw ErroContas('Conta não encontrada', 404);
+  if (!x.verificador) throw ErroContas('Esta conta ainda não pode trocar a senha por aqui. Peça ao host para redefinir a sua senha.', 409);
+  if (texto(corpo.prova) !== x.verificador) throw ErroContas('A senha atual não confere com a da planilha', 403);
+  var cred = corpo.credencial;
+  if (!cred || typeof cred !== 'object' || !cred.hash) throw ErroContas('Nova senha inválida');
+  if (!/^[0-9a-f]{64}$/.test(texto(corpo.verificador))) throw ErroContas('Verificador inválido');
+  var conta = JSON.parse(x.json);
+  conta.credencial = cred;
+  conta.trocarSenha = false;
+  conta.atualizadoEm = texto(corpo.atualizadoEm) || new Date(agoraAtual()).toISOString();
+  gravarLinhaContas(abaContas(CONTAS.ABA_USUARIOS), x.linha, [login, texto(conta.nome), conta.id, JSON.stringify(conta), conta.atualizadoEm, texto(corpo.verificador)]);
+  return { login: login, atualizadoEm: conta.atualizadoEm };
 }
 
 // ---------------- acessos (tokens) ----------------
@@ -145,7 +203,7 @@ function gravarAcesso(a) {
 function criarAcessoContas(nome, perfil) {
   nome = texto(nome);
   if (!nome) throw ErroContas('Informe o nome do aparelho (ex.: PC da Produção)');
-  if (CONTAS.PERFIS.indexOf(perfil) < 0) throw ErroContas('Perfil inválido: use aparelho ou admin');
+  if (CONTAS.PERFIS.indexOf(perfil) < 0) throw ErroContas('Perfil inválido: use leitura, aparelho ou admin');
   var token = 'sfc_' + Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   acrescentar(abaContas(CONTAS.ABA_ACESSOS), [[nome, perfil, sha256Hex(token), new Date(agoraAtual()).toISOString(), 'Sim', '']]);
   return { nome: nome, perfil: perfil, token: token };
@@ -165,11 +223,13 @@ function autenticarContas(token) {
 // ---------------- API ----------------
 
 var ACOES_PLANILHA_CONTAS = {
-  'status': { perfis: ['aparelho', 'admin'], executar: function (corpo, acesso) {
+  'status': { perfis: ['leitura', 'aparelho', 'admin'], executar: function (corpo, acesso) {
     return { perfil: acesso.perfil, nome: acesso.nome, versao: CONTAS.VERSAO, tipo: 'contas', agora: new Date(agoraAtual()).toISOString() };
   } },
-  'contas.listar': { perfis: ['aparelho', 'admin'], executar: function () { return { usuarios: listarContas() }; } },
+  'contas.listar': { perfis: ['leitura', 'aparelho', 'admin'], executar: function () { return { usuarios: listarContas() }; } },
   'contas.salvar': { perfis: ['aparelho', 'admin'], executar: function (corpo) { return salvarContas(corpo.usuarios); } },
+  'contas.senha': { perfis: ['leitura', 'aparelho', 'admin'], executar: function (corpo) { return trocarSenhaPropria(corpo); } },
+  'contas.verificador': { perfis: ['admin'], executar: function (corpo) { return definirVerificador(corpo.login, corpo.verificador); } },
   'acessos.listar': { perfis: ['admin'], executar: function () {
     return { acessos: lerAcessos().map(function (a) { return { id: a.linha, nome: a.nome, perfil: a.perfil, criadoEm: a.criadoEm, ativo: a.ativo, ultimoUso: a.ultimoUso }; }) };
   } },
@@ -233,7 +293,7 @@ function menuTokenContas() {
   var ui = SpreadsheetApp.getUi();
   var nome = ui.prompt('Novo acesso', 'Nome do aparelho ou pessoa (ex.: PC da Mariana):', ui.ButtonSet.OK_CANCEL);
   if (nome.getSelectedButton() !== ui.Button.OK) return;
-  var perfil = ui.prompt('Perfil', 'Digite: admin (o host, na página Usuários e permissões) ou aparelho (login nos outros aparelhos)', ui.ButtonSet.OK_CANCEL);
+  var perfil = ui.prompt('Perfil', 'Digite: admin (o host, na página Usuários e permissões), leitura (o token que vai embutido no site) ou aparelho', ui.ButtonSet.OK_CANCEL);
   if (perfil.getSelectedButton() !== ui.Button.OK) return;
   var r = travaContas(function () { return criarAcessoContas(nome.getResponseText(), perfil.getResponseText().trim().toLowerCase()); });
   ui.alert('Token criado para "' + r.nome + '" (' + r.perfil + ')', 'Copie agora — ele não será mostrado de novo:\n\n' + r.token + '\n\nNo SimulFlow: Usuários e permissões › Planilha de usuários.', ui.ButtonSet.OK);

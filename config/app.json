@@ -35,5 +35,9 @@
     "fuso": "America/Sao_Paulo",
     "recargaSegundos": 8,
     "ignorarRepeticaoSegundos": 3
+  },
+  "planilhaUsuarios": {
+    "url": "",
+    "token": ""
   }
 }

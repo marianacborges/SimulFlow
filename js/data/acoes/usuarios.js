@@ -37,8 +37,6 @@ export function salvarUsuario(store, u, dados) {
     const nome = exigirTexto(dados.nome, 'o nome');
     exigir(nome.length <= 100, 'Nome muito longo');
     exigir(config.app.areas.includes(dados.area), 'Selecione a área');
-    const email = String(dados.email || '').trim().toLowerCase();
-    exigir(!email || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email), 'E-mail inválido');
     exigir(!store.achar('usuarios', x => x.login === login && x.id !== dados.id), 'Já existe um usuário com este login');
     const funcoesValidas = config.app.funcoes.map(f => f.id);
     const funcoes = (dados.funcoes || []).filter(f => funcoesValidas.includes(f));
@@ -67,10 +65,11 @@ export function salvarUsuario(store, u, dados) {
       const o = store.obter('obras', id);
       exigir(o && !o.arquivado, 'Novos acessos ao Dashboard exigem obra ativa');
     }
-    const valores = { login, nome, email, area: dados.area, host, ativo, funcoes, permissoes, obrasDashboard: obras };
+    const valores = { login, nome, area: dados.area, host, ativo, funcoes, permissoes, obrasDashboard: obras };
     let reg;
     if (anterior) {
       reg = store.atualizar('usuarios', anterior.id, valores);
+      if ('email' in reg) delete reg.email; // o cadastro não tem mais e-mail
       if (dados.credencial?.hash) store.atualizar('usuarios', anterior.id, { credencial: dados.credencial, trocarSenha: true });
     } else {
       reg = store.inserir('usuarios', { ...valores, credencial: dados.credencial, trocarSenha: true });

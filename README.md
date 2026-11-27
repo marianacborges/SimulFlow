@@ -257,8 +257,9 @@ Publicação no GitHub Pages, criação da planilha, primeira tag e teste com ca
 
 ## 9.1 Planilha de usuários (a mesma conta em todos os aparelhos)
 
-As contas (usuários, e-mail e senha em hash) podem ficar numa planilha Google só de usuários, ligada à
-página **Usuários e permissões**. Num aparelho novo, **Já tenho conta** entra com o mesmo usuário e senha.
+As contas (usuário, nome e senha em hash) podem ficar numa planilha Google só de usuários, ligada à
+página **Usuários e permissões**. Com o token de leitura embutido em `config/app.json`
+(`planilhaUsuarios`), qualquer aparelho entra com o mesmo usuário e senha.
 Como criar e conectar: **[docs/usuarios.md](docs/usuarios.md)**.
 
 ## 10. Testes

@@ -77,6 +77,15 @@ function criarServicos(DataCtx, estado) {
       return new Intervalo(this, linha, coluna, nLinhas, nColunas);
     }
     setFrozenRows(n) { this.congeladas = n; return this; }
+    deleteColumn(col) {
+      const novas = new Map();
+      for (const [k, cel] of this.celulas) {
+        const [r, c] = k.split(',').map(Number);
+        if (c !== col) novas.set(`${r},${c > col ? c - 1 : c}`, cel);
+      }
+      this.celulas = novas;
+      return this;
+    }
     protect() { const p = new Protecao(); this.protecoes.push(p); return p; }
     getProtections() { return this.protecoes; }
     /** Auxiliar de teste: linhas como arrays (sem cabeçalho). */

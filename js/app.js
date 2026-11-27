@@ -3,8 +3,7 @@ import { carregarConfig, config } from './core/config.js';
 import { criarStore } from './data/store.js';
 import { criarAdaptadorLocal } from './data/adapters/local.js';
 import { aoPoderInstalar, instalarApp } from './core/instalar.js';
-import { escolherJSON } from './core/exportar.js';
-import { podeContas, puxarContas, ligarEnvioContas, conexaoContas, salvarConexaoContas, testarConexaoContas } from './core/contas.js';
+import { podeContas, puxarContas, ligarEnvioContas, conexaoContas, registrarVerificador, trocarSenhaNaPlanilha } from './core/contas.js';
 import { criarAcoes } from './data/acoes/index.js';
 import { dadosDemonstracao } from './data/demo.js';
 import { atualizarDemonstracaoSePreciso } from './data/acoes/dados.js';
@@ -19,6 +18,15 @@ import { combinaOP, statusExibidoOP, statusExibidoFA } from './data/regras.js';
 
 const raiz = document.getElementById('raiz');
 let store, acoes, roteador, usuario = null;
+// Senha digitada no login, guardada só na memória até a troca obrigatória da senha provisória
+// (para provar a senha atual à planilha de usuários). Nunca é gravada.
+let senhaDoLogin = '';
+
+/** Depois de entrar: guarda a senha na memória e, no aparelho do host, atualiza o verificador da planilha. */
+function aposEntrar(login, senha) {
+  senhaDoLogin = senha;
+  registrarVerificador(login, senha).catch(() => {});
+}
 
 function usuarioAtual() {
   // Relê do store para refletir alterações (ex.: host mudou permissões).
@@ -155,64 +163,28 @@ function telaCriarHost() {
 }
 
 /**
- * "Já tenho conta em outro aparelho": as contas ficam no aparelho onde foram criadas, então trazemos
- * o backup exportado no outro aparelho (contas + dados). Depois é só entrar com o mesmo usuário e senha.
- */
-/**
- * "Já tenho conta": entra com usuário e senha de uma conta criada em outro aparelho. As contas ficam na
- * planilha de usuários (apps-script/contas/Contas.gs); um aparelho ainda não conectado informa antes a URL e o token.
+ * "Já tenho conta": entra com usuário e senha de uma conta criada em outro aparelho. As contas vêm da
+ * planilha de usuários (apps-script/contas/Contas.gs), pela conexão embutida no site (config/app.json).
  */
 function telaJaTenhoConta(voltar = telaCriarHost) {
-  const conectado = podeContas(conexaoContas());
   telaAcesso(html`<h1>Já tenho conta</h1>
     <form class="auth-form" novalidate>
-      ${conectado ? '' : html`<p class="muted small">Este aparelho ainda não está conectado à planilha de usuários. Peça ao host a URL e um token de acesso (Usuários e permissões › Planilha de usuários › Novo acesso).</p>
-        ${campo('URL do app da Web', html`<input name="url" required inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">`)}
-        ${campo('Token de acesso', html`<input name="token" required type="password" autocomplete="off" placeholder="sf_…">`)}`}
       ${campo('Usuário', html`<input name="login" required autocomplete="username">`)}
       ${campoSenha('senha', 'Senha')}
       <p role="alert" class="error"></p>
       <button class="btn primario full" type="submit">Entrar</button>
-      <button class="btn ghost full" type="button" data-backup>Prefiro importar um backup</button>
       <button class="btn ghost full" type="button" data-voltar>Voltar</button></form>`,
   async d => {
-    let con = conexaoContas();
-    if (!podeContas(con)) {
-      if (!d.url?.trim() || !d.token?.trim()) throw new Error('Informe a URL e o token da planilha de usuários');
-      con = await testarConexaoContas(d.url, d.token);
-      salvarConexaoContas(con);
-    }
+    const con = conexaoContas();
+    if (!podeContas(con)) throw new Error('A planilha de usuários ainda não foi configurada neste site. Fale com o host.');
     if (!d.login.trim() || !d.senha) throw new Error('Informe usuário e senha');
     await puxarContas(store, con);
     if (!store.achar('usuarios', u => u.login === auth.normalizarLogin(d.login))) {
       throw new Error('Conta não encontrada. Confira o usuário ou peça ao host para criar a sua conta.');
     }
     await auth.entrar(store, d.login, d.senha);
+    aposEntrar(d.login, d.senha);
     telaInicial();
-  });
-  raiz.querySelector('[data-backup]').addEventListener('click', () => telaImportarBackup(() => telaJaTenhoConta(voltar)));
-  raiz.querySelector('[data-voltar]').addEventListener('click', () => voltar());
-}
-
-/** Alternativa sem planilha: importar o backup JSON exportado no outro aparelho (contas + dados). */
-function telaImportarBackup(voltar = telaCriarHost) {
-  telaAcesso(html`<h1>Importar backup</h1>
-    <form class="auth-form" novalidate>
-      <p>Traga o backup do aparelho onde você já usa o SimulFlow.</p>
-      <ol class="passos-conta">
-        <li>No outro aparelho, o host abre <strong>Configurações › Dados e backup › Exportar JSON completo</strong>.</li>
-        <li>Envie o arquivo para este aparelho (e-mail, WhatsApp, pendrive…).</li>
-        <li>Toque em <strong>Escolher arquivo de backup</strong> e selecione o arquivo.</li>
-      </ol>
-      <p class="muted small">Vêm as contas e todos os dados como estavam no backup. Depois disso, cada aparelho segue com a sua cópia.</p>
-      <p role="alert" class="error"></p>
-      <button class="btn primario full" type="submit">Escolher arquivo de backup</button>
-      <button class="btn ghost full" type="button" data-voltar>Voltar</button></form>`,
-  async () => {
-    const pacote = await escolherJSON();
-    store.importar(pacote);
-    toast('Backup importado: entre com o seu usuário e senha');
-    telaLogin();
   });
   raiz.querySelector('[data-voltar]').addEventListener('click', () => voltar());
 }
@@ -229,6 +201,7 @@ function telaLogin(mensagem = '') {
     // Conectado à planilha: traz as contas mais novas (conta nova, senha trocada em outro aparelho).
     if (podeContas(conexaoContas())) await puxarContas(store, conexaoContas(), 6000).catch(() => 0);
     await auth.entrar(store, d.login, d.senha);
+    aposEntrar(d.login, d.senha);
     telaInicial();
   });
   raiz.querySelector('[data-outro]')?.addEventListener('click', () => telaJaTenhoConta(() => telaLogin()));
@@ -243,10 +216,19 @@ function telaTrocarSenha(obrigatoria) {
     auth.validarSenha(d.senha);
     if (d.senha !== d.confirmacao) throw new Error('As senhas não conferem');
     acoes.usuarios.definirSenha({ id: usuario.id, credencial: await auth.gerarCredencial(d.senha) });
+    levarSenhaParaPlanilha(senhaDoLogin, d.senha);
+    senhaDoLogin = '';
     toast('Senha alterada');
     telaInicial();
   });
   raiz.querySelector('[data-sair]').addEventListener('click', () => encerrar(''));
+}
+
+/** Leva a troca da própria senha para a planilha de usuários (avisa se não conseguir). */
+function levarSenhaParaPlanilha(senhaAtual, senhaNova) {
+  const u = usuarioAtual();
+  trocarSenhaNaPlanilha(store, u, senhaAtual, senhaNova)
+    .catch(e => toast('Senha trocada neste aparelho, mas não na planilha de usuários: ' + e.message, 'erro'));
 }
 
 function alterarMinhaSenha() {
@@ -259,6 +241,7 @@ function alterarMinhaSenha() {
       auth.validarSenha(d.senha);
       if (d.senha !== d.confirmacao) throw new Error('As senhas não conferem');
       acoes.usuarios.definirSenha({ id: usuario.id, credencial: await auth.gerarCredencial(d.senha) });
+      levarSenhaParaPlanilha(d.atual, d.senha);
       toast('Senha alterada');
     },
   });
