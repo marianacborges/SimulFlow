@@ -71,7 +71,7 @@ function view(ctx) {
         ${rosca([...config.app.statusFA.map(s => ({ rotulo: s, valor: fas.filter(f => f.status === s && !faAtrasada(f)).length, cor: tom(s), href: linkFA(s) })), { rotulo: 'Atrasada', valor: fasAtrasadas.length, cor: 'red', href: linkFA('Atrasada') }], fas.length, 'FAs no total')}</section>
       <section class="panel"><div class="panel-heading"><div><h2>Produção por obra</h2></div></div>${porObra.length ? barras(porObra, { rotuloTotal: 'Planejado', rotuloFeito: 'Produzido' }) : vazio()}</section>
     </div>
-    ${verPCP ? html`<div class="section">${tabelaOPs(ctx, estado.op, { compacto: true, filtro: F.op })}</div>` : ''}
+    ${verPCP ? html`<div class="section">${tabelaOPs(ctx, estado.op, { compacto: true, incluir: F.op })}</div>` : ''}
     <div class="grid-2 section">
       <section class="panel"><div class="panel-heading"><div><h2>Atrasos <span class="count-pill">${fasAtrasadas.length + itensAtrasados.length + opsAtrasadas.length}</span></h2></div></div>
         <div class="alert-list">${opsAtrasadas.slice(0, 3).map(o => html`<div class="alert-item"><span class="alert-symbol red">!</span><div class="alert-copy"><strong><a class="link" href="#/pcp/op/${o.id}">${o.numero}</a> · ${o.produto}</strong><p>Prazo ${data(o.prazo)} · ${o.status}</p></div>${badge('OP', 'red')}</div>`)}

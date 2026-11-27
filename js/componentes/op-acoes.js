@@ -63,12 +63,12 @@ export function cliquesOP(ctx) {
 }
 
 /** Tabela de OPs (estado: { busca, status, setor, periodo, ordem, pagina }). */
-export function tabelaOPs(ctx, estado, { compacto = false, prefixo = 'op', filtro = null } = {}) {
+export function tabelaOPs(ctx, estado, { compacto = false, prefixo = 'op', incluir = null } = {}) {
   const { store } = ctx;
   const k = s => `${prefixo}.${s}`;
   const obra = id => store.obter('obras', id);
   const status = estado.status ?? '';
-  const lista = store.todos('ops').filter(o => (!filtro || filtro(o)) && combinaOP(o, obra(o.obraId), estado.busca || '') &&
+  const lista = store.todos('ops').filter(o => (!incluir || incluir(o)) && combinaOP(o, obra(o.obraId), estado.busca || '') &&
     (!status || (status === 'Atrasada' ? opAtrasada(o) : o.status === status)) &&
     (!estado.setor || o.setor === estado.setor) && (!estado.periodo || o.prazo.slice(0, 7) === estado.periodo) &&
     (!estado.obra || o.obraId === estado.obra))
