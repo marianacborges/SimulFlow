@@ -143,12 +143,12 @@ function criarServicos(DataCtx, estado) {
  *  - api(acao, dados, token) → resposta JSON do doPost
  *  - criarToken(nome, perfil) → token em texto claro
  */
-export function carregarAppsScript({ agora = new Date(), estado = {}, relogioReal = false } = {}) {
+export function carregarAppsScript({ agora = new Date(), estado = {}, relogioReal = false, arquivos = ARQUIVOS_GS } = {}) {
   const ctx = vm.createContext({ console });
   const DataCtx = vm.runInContext('Date', ctx);
   const { planilha, globais } = criarServicos(DataCtx, estado);
   Object.assign(ctx, globais);
-  for (const arq of ARQUIVOS_GS) vm.runInContext(fs.readFileSync(path.join(PASTA, arq), 'utf8'), ctx, { filename: arq });
+  for (const arq of arquivos) vm.runInContext(fs.readFileSync(path.join(PASTA, arq), 'utf8'), ctx, { filename: arq });
   // Relógio fixo (testes) ou real com deslocamento opcional (emulador).
   let atual = new Date(agora);
   let deslocamento = 0;

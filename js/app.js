@@ -4,6 +4,7 @@ import { criarStore } from './data/store.js';
 import { criarAdaptadorLocal } from './data/adapters/local.js';
 import { aoPoderInstalar, instalarApp } from './core/instalar.js';
 import { escolherJSON } from './core/exportar.js';
+import { podeContas, puxarContas, ligarEnvioContas, conexaoContas, salvarConexaoContas, testarConexaoContas } from './core/contas.js';
 import { criarAcoes } from './data/acoes/index.js';
 import { dadosDemonstracao } from './data/demo.js';
 import { atualizarDemonstracaoSePreciso } from './data/acoes/dados.js';
@@ -49,6 +50,9 @@ async function iniciar() {
   if (!existia) await primeiraCarga();
   else atualizarDemonstracaoSePreciso(store);
   acoes = criarAcoes(store, usuarioAtual);
+  // Contas compartilhadas pela planilha (se este aparelho estiver conectado): traz as mais novas e envia as daqui.
+  if (podeContas(conexaoContas())) await puxarContas(store, conexaoContas(), 4000).catch(() => 0);
+  ligarEnvioContas(store);
   store.adaptador.observarExterno(() => store.recarregar());
   store.assinar(() => {
     if (usuario && !auth.usuarioDaSessao(store)) { encerrar('Sua sessão foi encerrada.'); return; }
@@ -147,15 +151,52 @@ function telaCriarHost() {
     auth.iniciarSessao(host);
     telaInicial();
   });
-  raiz.querySelector('[data-ja-tenho]').addEventListener('click', telaJaTenhoConta);
+  raiz.querySelector('[data-ja-tenho]').addEventListener('click', () => telaJaTenhoConta(telaCriarHost));
 }
 
 /**
  * "Já tenho conta em outro aparelho": as contas ficam no aparelho onde foram criadas, então trazemos
  * o backup exportado no outro aparelho (contas + dados). Depois é só entrar com o mesmo usuário e senha.
  */
-function telaJaTenhoConta() {
+/**
+ * "Já tenho conta": entra com usuário e senha de uma conta criada em outro aparelho. As contas ficam na
+ * planilha de usuários (apps-script/contas/Contas.gs); um aparelho ainda não conectado informa antes a URL e o token.
+ */
+function telaJaTenhoConta(voltar = telaCriarHost) {
+  const conectado = podeContas(conexaoContas());
   telaAcesso(html`<h1>Já tenho conta</h1>
+    <form class="auth-form" novalidate>
+      ${conectado ? '' : html`<p class="muted small">Este aparelho ainda não está conectado à planilha de usuários. Peça ao host a URL e um token de acesso (Usuários e permissões › Planilha de usuários › Novo acesso).</p>
+        ${campo('URL do app da Web', html`<input name="url" required inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">`)}
+        ${campo('Token de acesso', html`<input name="token" required type="password" autocomplete="off" placeholder="sf_…">`)}`}
+      ${campo('Usuário', html`<input name="login" required autocomplete="username">`)}
+      ${campoSenha('senha', 'Senha')}
+      <p role="alert" class="error"></p>
+      <button class="btn primario full" type="submit">Entrar</button>
+      <button class="btn ghost full" type="button" data-backup>Prefiro importar um backup</button>
+      <button class="btn ghost full" type="button" data-voltar>Voltar</button></form>`,
+  async d => {
+    let con = conexaoContas();
+    if (!podeContas(con)) {
+      if (!d.url?.trim() || !d.token?.trim()) throw new Error('Informe a URL e o token da planilha de usuários');
+      con = await testarConexaoContas(d.url, d.token);
+      salvarConexaoContas(con);
+    }
+    if (!d.login.trim() || !d.senha) throw new Error('Informe usuário e senha');
+    await puxarContas(store, con);
+    if (!store.achar('usuarios', u => u.login === auth.normalizarLogin(d.login))) {
+      throw new Error('Conta não encontrada. Confira o usuário ou peça ao host para criar a sua conta.');
+    }
+    await auth.entrar(store, d.login, d.senha);
+    telaInicial();
+  });
+  raiz.querySelector('[data-backup]').addEventListener('click', () => telaImportarBackup(() => telaJaTenhoConta(voltar)));
+  raiz.querySelector('[data-voltar]').addEventListener('click', () => voltar());
+}
+
+/** Alternativa sem planilha: importar o backup JSON exportado no outro aparelho (contas + dados). */
+function telaImportarBackup(voltar = telaCriarHost) {
+  telaAcesso(html`<h1>Importar backup</h1>
     <form class="auth-form" novalidate>
       <p>Traga o backup do aparelho onde você já usa o SimulFlow.</p>
       <ol class="passos-conta">
@@ -166,14 +207,14 @@ function telaJaTenhoConta() {
       <p class="muted small">Vêm as contas e todos os dados como estavam no backup. Depois disso, cada aparelho segue com a sua cópia.</p>
       <p role="alert" class="error"></p>
       <button class="btn primario full" type="submit">Escolher arquivo de backup</button>
-      <button class="btn ghost full" type="button" data-voltar>Voltar para o primeiro acesso</button></form>`,
+      <button class="btn ghost full" type="button" data-voltar>Voltar</button></form>`,
   async () => {
     const pacote = await escolherJSON();
     store.importar(pacote);
     toast('Backup importado: entre com o seu usuário e senha');
     telaLogin();
   });
-  raiz.querySelector('[data-voltar]').addEventListener('click', telaCriarHost);
+  raiz.querySelector('[data-voltar]').addEventListener('click', () => voltar());
 }
 
 function telaLogin(mensagem = '') {
@@ -182,11 +223,15 @@ function telaLogin(mensagem = '') {
       ${campo('Usuário', html`<input name="login" required autocomplete="username">`)}
       ${campoSenha('senha', 'Senha')}
       <p role="alert" class="error">${mensagem}</p><button class="btn primario full" type="submit">Entrar</button>
+      ${podeContas(conexaoContas()) ? '' : html`<button class="btn ghost full" type="button" data-outro>Entrar com conta de outro aparelho</button>`}
       <p class="muted small">Esqueceu a senha? Peça ao host para definir uma senha provisória.</p></form>`,
   async d => {
+    // Conectado à planilha: traz as contas mais novas (conta nova, senha trocada em outro aparelho).
+    if (podeContas(conexaoContas())) await puxarContas(store, conexaoContas(), 6000).catch(() => 0);
     await auth.entrar(store, d.login, d.senha);
     telaInicial();
   });
+  raiz.querySelector('[data-outro]')?.addEventListener('click', () => telaJaTenhoConta(() => telaLogin()));
 }
 
 function telaTrocarSenha(obrigatoria) {

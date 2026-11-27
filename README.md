@@ -255,6 +255,12 @@ Aba para contar os colaboradores presentes no dia lendo a tag NFC do crachá pel
 Publicação no GitHub Pages, criação da planilha, primeira tag e teste com cartão real:
 **[docs/presenca.md](docs/presenca.md)**.
 
+## 9.1 Planilha de usuários (a mesma conta em todos os aparelhos)
+
+As contas (usuários, e-mail e senha em hash) podem ficar numa planilha Google só de usuários, ligada à
+página **Usuários e permissões**. Num aparelho novo, **Já tenho conta** entra com o mesmo usuário e senha.
+Como criar e conectar: **[docs/usuarios.md](docs/usuarios.md)**.
+
 ## 10. Testes
 
 ```bash

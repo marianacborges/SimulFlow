@@ -54,7 +54,7 @@ const comandos = {
   empacotar                                Gera dist/simulflow.html (arquivo único, abre com duplo clique)
   testar                                   Roda os testes das regras de negócio
   verificar                                Valida abas, módulos e campos; procura referências proibidas
-  emular-planilha [porta] [--vazio] [--relogio=AAAA-MM-DDTHH:MM-03:00]
+  emular-planilha [porta] [--vazio] [--relogio=AAAA-MM-DDTHH:MM-03:00] [--contas]
                                            Roda o Apps Script da Presença localmente, sem conta Google (padrão 8790)`);
   },
 
@@ -66,14 +66,17 @@ const comandos = {
     const porta = Number(args.find(a => /^\d+$/.test(a)) || 8790);
     const vazio = args.includes('--vazio');
     const inicio = args.find(a => a.startsWith('--relogio='))?.slice(10);
+    const contas = args.includes('--contas'); // planilha de usuários (apps-script/contas/Contas.gs)
     const { carregarAppsScript } = await import(new URL('../apps-script/testes/google-falso.js', import.meta.url));
-    const g = carregarAppsScript({ relogioReal: true });
+    const g = carregarAppsScript({ relogioReal: true, ...(contas ? { arquivos: ['contas/Contas.gs'] } : {}) });
     if (inicio) {
       if (Number.isNaN(Date.parse(inicio))) falhar('Use --relogio=AAAA-MM-DDTHH:MM:SS-03:00');
       g.relogio.definir(inicio);
     }
-    const tokens = { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor') };
-    if (!vazio) {
+    const tokens = contas
+      ? { admin: g.ctx.criarAcessoContas('Host (emulador)', 'admin').token, aparelho: g.ctx.criarAcessoContas('Outro aparelho (emulador)', 'aparelho').token }
+      : { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor') };
+    if (!vazio && !contas) {
       for (const [nome, matricula, funcao, tag] of [['Ana Souza', '00123', 'Soldador', '04:A1:B2:C3'], ['Bruno Lima', '00456', 'Montador', '04:D4:E5:F6'], ['Carla Dias', '00789', 'Soldador', '04:11:22:33'], ['Diego Alves', '01011', 'Pintor', '']]) {
         g.api('colaboradores.salvar', { colaborador: { nome, matricula, funcao, tag, ativo: true } }, tokens.planejamento);
       }
@@ -102,10 +105,10 @@ const comandos = {
         res.end(saida);
       });
     }).listen(porta, '127.0.0.1', () => {
-      ok(`Emulador da planilha em http://localhost:${porta}/  (dados só em memória; Ctrl+C para parar)`);
-      console.log(`  Use esta URL na aba Presença › Conexão, com um dos tokens:`);
+      ok(`Emulador da planilha ${contas ? 'de usuários ' : ''}em http://localhost:${porta}/  (dados só em memória; Ctrl+C para parar)`);
+      console.log(contas ? '  Use esta URL em Usuários e permissões › Planilha de usuários, com um dos tokens:' : '  Use esta URL na aba Presença › Conexão, com um dos tokens:');
       for (const [perfil, t] of Object.entries(tokens)) console.log(`    ${perfil.padEnd(13)} ${t}`);
-      if (!vazio) console.log('  Colaboradores de exemplo: tags 04:A1:B2:C3, 04:D4:E5:F6, 04:11:22:33 (matrículas 00123, 00456, 00789, 01011).');
+      if (!vazio && !contas) console.log('  Colaboradores de exemplo: tags 04:A1:B2:C3, 04:D4:E5:F6, 04:11:22:33 (matrículas 00123, 00456, 00789, 01011).');
     });
   },
 

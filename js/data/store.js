@@ -119,6 +119,23 @@ export function criarStore(adaptador) {
       store.carregar();
       notificar();
     },
+    /**
+     * Mescla contas vindas de fora (planilha) sem mexer nas datas: por login, vale o registro mais novo
+     * (atualizadoEm, ou criadoEm). Devolve quantas mudaram.
+     */
+    mesclarUsuarios(lista) {
+      const ts = u => String(u?.atualizadoEm || u?.criadoEm || '');
+      const chave = u => String(u?.login || '').trim().toLowerCase();
+      let mudou = 0;
+      for (const r of Array.isArray(lista) ? lista : []) {
+        if (!r?.id || !chave(r) || !r.credencial) continue;
+        const i = estado.usuarios.findIndex(u => chave(u) === chave(r) || u.id === r.id);
+        if (i < 0) { estado.usuarios.push(clonar(r)); mudou++; }
+        else if (ts(r) > ts(estado.usuarios[i])) { estado.usuarios[i] = clonar(r); mudou++; }
+      }
+      if (mudou) { persistir(); notificar(); }
+      return mudou;
+    },
     exportar() {
       return { formato: 'simulflow-backup', versao: VERSAO_DADOS, exportadoEm: agoraISO(), dados: clonar(estado) };
     },
