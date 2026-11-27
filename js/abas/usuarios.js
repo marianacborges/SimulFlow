@@ -53,7 +53,7 @@ function view(ctx) {
   const { store } = ctx;
   const lista = store.filtrar('usuarios', u => combinaTexto(estado.f.busca, [u.nome, u.login, u.area])).sort((a, b) => a.nome.localeCompare(b.nome));
   const funcao = id => config.app.funcoes.find(f => f.id === id)?.rotulo || id;
-  return html`${cabecalho('Usuários e permissões', 'O host cria usuários, define senha provisória, área, funções e o acesso de cada aba.', botao('Novo usuário', { acao: 'novo', icone: 'plus' }))}
+  return html`${cabecalho('Usuários e permissões', '', botao('Novo usuário', { acao: 'novo', icone: 'plus' }))}
     <div class="filters">${busca('f.busca', estado.f.busca, 'Buscar nome, login ou área...')}<span class="filter-count">${lista.length} usuários</span></div>
     <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nome / login</th><th>Área</th><th>Perfil e funções</th><th>Abas com alteração</th><th>Situação</th><th>Ações</th></tr></thead><tbody>
       ${lista.map(u => html`<tr><td><strong>${u.nome}</strong><span class="subline">${u.login}</span></td><td>${u.area}</td>

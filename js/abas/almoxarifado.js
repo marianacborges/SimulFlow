@@ -58,7 +58,7 @@ function view(ctx) {
     combinaTexto(f.busca, [e.descricao, e.ref, ...camposOP(store, e.ref)]));
   const itens = store.filtrar('itens', i => !i.arquivado && combinaTexto(estado.cons.busca, [i.codigo, i.serie, i.descricao, i.opNumero, store.obter('obras', i.obraId)?.nome]))
     .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }));
-  return html`${cabecalho('Almoxarifado', 'Materiais, movimentações de estoque e solicitações da produção.', botao('Cadastrar material', { acao: 'mat-novo', icone: 'plus', desab: !regra('materiais') }))}
+  return html`${cabecalho('Almoxarifado', '', botao('Cadastrar material', { acao: 'mat-novo', icone: 'plus', desab: !regra('materiais') }))}
     <div class="stats">${stat({ rotulo: 'Materiais cadastrados', valor: materiais.length, icone: 'boxes', rodape: 'Itens no almoxarifado' })}
       ${stat({ rotulo: 'Abaixo do estoque mínimo', valor: materiais.filter(m => m.estoque < m.minimo).length, icone: 'alert', cor: 'amber', rodape: 'Reposição necessária' })}
       ${stat({ rotulo: 'Solicitações pendentes', valor: store.filtrar('eventos', e => e.tipo === 'parada' && e.destinatarios.includes('Almoxarifado') && !e.resolvida).length, icone: 'package', cor: 'red', rodape: 'Aguardando atendimento' })}
@@ -73,7 +73,7 @@ function view(ctx) {
         <td>${badge(m.estoque < m.minimo ? 'Estoque baixo' : 'Disponível')}</td>
         <td><div class="row-actions">${botao('Movimentar', { acao: 'mat-mov', dados: { id: m.id }, v: 'outline', tam: 'sm', desab: !regra('materiais') })}${botao('', { acao: 'mat-editar', dados: { id: m.id }, v: 'ghost', tam: 'icon', icone: 'edit', titulo: 'Editar ' + m.codigo, desab: !regra('materiais') })}</div></td></tr>`)}
       </tbody></table></div>${lista.length ? '' : vazio()}</section>
-    <section class="section"><h2>Solicitações de materiais</h2><p class="muted small" style="margin-bottom:10px">Ocorrências encaminhadas pela produção.</p>
+    <section class="section"><h2 style="margin-bottom:10px">Solicitações de materiais</h2>
       <div class="notification-list">${solicitacoes.map(e => html`<div class="alert-item"><span class="alert-symbol amber">!</span><div class="alert-copy"><strong>${e.ref}</strong><p>${e.descricao}</p><small>${data(e.em)} · Aguardando atendimento</small></div>
         ${botao('Registrar providência', { acao: 'op-registro', dados: { id: e.opId, tipo: 'retomada' }, v: 'outline', tam: 'sm', desab: !regra('retomada') || !store.obter('ops', e.opId) })}</div>`)}
       ${solicitacoes.length ? '' : vazio()}</div></section>

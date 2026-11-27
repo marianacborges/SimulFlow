@@ -65,7 +65,7 @@ export function secaoProgramacao(ctx) {
   const etapas = d.etapas.filter(e => !e.arquivado && (!r.obras.length || r.obras.includes(e.obraId) || r.obras.includes(store.obter('obras', e.obraId)?.parentId)));
   const cicloAtivo = d.ciclos.some(c => c.inicio <= aplicado.fim && c.fim >= aplicado.inicio && c.status !== 'encerrado');
   const exportacoes = store.filtrar('auditoria', a => a.acao === 'Dashboard exportado em PDF').sort((a, b) => b.em.localeCompare(a.em));
-  return html`<section class="section" id="programacao-painel"><div class="section-title"><div><h2>Acompanhamento da programação</h2><p class="muted small">Indicadores, alertas e movimentações das obras liberadas para você.</p></div>
+  return html`<section class="section" id="programacao-painel"><div class="section-title"><div><h2>Acompanhamento da programação</h2></div>
       <div class="toolbar">${ctx.host ? botao('', { acao: 'limite', v: 'outline', tam: 'icon', icone: 'settings', titulo: 'Configurar limite de período' }) : ''}
       ${botao('Exportar PDF', { acao: 'pdf', icone: 'download', desab: !!erroPeriodo(aplicado, max) })}</div></div>
     <details class="painel-filtros" data-caixa-filtros${filtrosAbertos || erro ? raw(' open') : ''}><summary>${ic('settings')}<span class="painel-filtros-resumo"><strong>Filtros</strong> ${v.resumo}</span><span class="painel-filtros-acao">Configurar</span></summary>

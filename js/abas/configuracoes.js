@@ -33,7 +33,7 @@ const SECOES = [
   {
     id: 'aparencia', titulo: 'Aparência', icone: 'sun', descricao: 'Tema claro, escuro ou automático da tela.',
     resumo: () => 'Tema: ' + TEMAS[temaEscolhido()].split(' (')[0],
-    view: () => html`<div class="panel"><h2>Tema da tela</h2><p class="muted small" style="margin:4px 0 14px">Vale para este navegador. O botão ${ic('moon')} no topo também alterna entre claro e escuro.</p>
+    view: () => html`<div class="panel"><h2 style="margin-bottom:14px">Tema da tela</h2>
       <div class="opcoes-tema">${Object.entries(TEMAS).map(([v, t]) => html`<label class="opcao-tema ${temaEscolhido() === v ? 'ativa' : ''}"><input type="radio" name="tema" value="${v}" data-acao="tema" data-valor="${v}"${temaEscolhido() === v ? raw(' checked') : ''}>
         <span class="amostra-tema amostra-${v}"></span><strong>${t}</strong></label>`)}</div></div>`,
   },
@@ -87,23 +87,23 @@ const SECOES = [
   {
     id: 'abas', titulo: 'Abas registradas', icone: 'menu', descricao: 'Abas do menu, ordem, módulo e quem pode acessar.',
     resumo: () => `${config.abas.length} abas · ${config.abas.filter(a => a.visivel === false).length} fora do menu`,
-    view: () => html`<h2>Abas registradas</h2><p class="muted small" style="margin:4px 0 10px">Para criar, ocultar ou reordenar abas use <code>node tools/simulflow.js</code> (veja o README).</p>
+    view: () => html`<h2 style="margin-bottom:10px">Abas registradas</h2>
       <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Ordem</th><th>Aba</th><th>Módulo</th><th>Perfis</th><th>Situação</th></tr></thead><tbody>
         ${config.abas.map(a => html`<tr><td>${a.ordem}</td><td><strong>${a.titulo}</strong><span class="subline">${a.id}</span></td><td><code>js/abas/${a.modulo}</code></td><td>${(a.perfis || ['todos']).join(', ')}</td><td>${badge(a.visivel === false ? 'Fora do menu' : 'No menu', a.visivel === false ? 'neutral' : 'green')}</td></tr>`)}</tbody></table></div></div>`,
   },
 ];
 
 function indice(ctx) {
-  return html`${cabecalho('Configurações', 'Escolha o que deseja configurar (somente host).', botao('Histórico', { acao: 'historico', v: 'outline', icone: 'history' }))}
+  return html`${cabecalho('Configurações', '', botao('Histórico', { acao: 'historico', v: 'outline', icone: 'history' }))}
     <nav class="cards-config" aria-label="Configurações">${SECOES.map(s => html`<a class="card-config" href="#/configuracoes/${s.id}">
-      <span class="stat-icon blue">${ic(s.icone, 20)}</span><span class="card-config-texto"><strong>${s.titulo}</strong><span>${s.descricao}</span><small>${s.resumo(ctx)}</small></span>${ic('chevronRight')}</a>`)}</nav>`;
+      <span class="stat-icon blue">${ic(s.icone, 20)}</span><span class="card-config-texto"><strong>${s.titulo}</strong><small>${s.resumo(ctx)}</small></span>${ic('chevronRight')}</a>`)}</nav>`;
 }
 
 function view(ctx) {
   const secao = SECOES.find(s => s.id === ctx.params[0]);
   if (!secao) return indice(ctx);
   return html`<p class="muted small"><a class="link" href="#/configuracoes">Configurações</a> / ${secao.titulo}</p>
-    ${cabecalho(secao.titulo, secao.descricao, html`<a class="btn outline" href="#/configuracoes">${ic('arrowLeft')}<span>Todas as configurações</span></a>`)}
+    ${cabecalho(secao.titulo, '', html`<a class="btn outline" href="#/configuracoes">${ic('arrowLeft')}<span>Todas as configurações</span></a>`)}
     <section>${secao.view(ctx)}</section>`;
 }
 

@@ -29,7 +29,7 @@ function viewMov(ctx) {
   const { store } = ctx;
   const f = estado.mov;
   const lista = movimentos(ctx);
-  return html`${cabecalho('Histórico e Rastreabilidade', 'Registro cronológico das movimentações e alterações da produção.', botao('Exportar histórico', { acao: 'csv-mov', v: 'outline', icone: 'download' }))}
+  return html`${cabecalho('Histórico e Rastreabilidade', '', botao('Exportar histórico', { acao: 'csv-mov', v: 'outline', icone: 'download' }))}
     <div class="filters">${busca('mov.busca', f.busca)}
       ${filtro('mov.setor', [{ v: '', t: 'Todos os setores' }, ...unicos([...config.app.areas, ...config.app.setoresOP, ...store.todos('eventos').map(e => e.origem)])], f.setor, 'Setor do histórico')}
       ${filtro('mov.tipo', [{ v: '', t: 'Todas as movimentações' }, ...unicos(store.todos('eventos').map(e => e.tipo))], f.tipo, 'Tipo de movimentação')}
@@ -46,7 +46,7 @@ function viewAud(ctx) {
   const lista = auditoria(ctx);
   const tam = 25;
   const pagina = Math.min(f.pagina || 1, Math.max(1, Math.ceil(lista.length / tam)));
-  return html`${cabecalho('Auditoria completa', 'Todas as gravações do sistema (somente inserção): quem, quando, antes e depois.', botao('Exportar auditoria', { acao: 'csv-aud', v: 'outline', icone: 'download' }))}
+  return html`${cabecalho('Auditoria completa', '', botao('Exportar auditoria', { acao: 'csv-aud', v: 'outline', icone: 'download' }))}
     <div class="filters">${busca('aud.busca', f.busca, 'Buscar ação, usuário ou observação...')}
       ${filtro('aud.entidade', [{ v: '', t: 'Todos os registros' }, ...unicos(store.todos('auditoria').map(a => a.entidade))], f.entidade, 'Tipo de registro')}
       <input type="date" data-k="aud.dia" value="${f.dia}" aria-label="Data"><span class="filter-count">${lista.length} registros</span></div>

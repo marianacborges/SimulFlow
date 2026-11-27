@@ -67,7 +67,7 @@ function viewLista(ctx) {
   const obras = store.filtrar('obras', o => o.arquivado === !!f.arquivados && (f.ocultos || !o.oculto) &&
     combinaTexto(f.busca, [o.nome, o.contrato, o.cliente, o.responsavel, store.obter('obras', o.parentId)?.nome]))
     .sort((a, b) => (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0) || a.nome.localeCompare(b.nome));
-  return html`${cabecalho('Projetos/Obras', 'Contratos, sub-projetos, pedidos e itens.', botao('Novo Projeto/Obra', { acao: 'obra-nova', icone: 'plus', desab: !regra('editarObras') }))}
+  return html`${cabecalho('Projetos/Obras', '', botao('Novo Projeto/Obra', { acao: 'obra-nova', icone: 'plus', desab: !regra('editarObras') }))}
     <div class="filters">${busca('lista.busca', f.busca, 'Buscar obra, contrato, cliente ou responsável...')}
       ${alternar('lista.ocultos', f.ocultos, 'Mostrar ocultos')}${alternar('lista.arquivados', f.arquivados, 'Arquivados')}<span class="filter-count">${obras.length} registros</span></div>
     <div class="cards-grid">${obras.map(o => {
@@ -161,7 +161,7 @@ function viewVinculadas(ctx) {
     const ops = store.filtrar('ops', op => op.obraId === o.id);
     return ops.length && ops.some(op => combinaTexto(f.busca, [op.numero, op.faFicha, op.produto, o.nome, op.responsavel, op.status])) && (!f.risco || ops.some(op => opAtrasada(op)));
   });
-  return html`${cabecalho('Ordens vinculadas aos projetos', 'Visibilidade dos projetos, prazos e informações para repasse ao cliente.')}
+  return html`${cabecalho('Ordens vinculadas aos projetos', '')}
     <div class="filters">${busca('vinc.busca', f.busca)}${filtro('vinc.risco', [{ v: '', t: 'Todos os projetos' }, { v: 'risco', t: 'Com risco de atraso' }], f.risco, 'Risco do projeto')}<span class="filter-count">${obras.length} projetos</span></div>
     <div class="cards-grid">${obras.map(o => {
       const ops = store.filtrar('ops', op => op.obraId === o.id);

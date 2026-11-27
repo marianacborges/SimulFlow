@@ -27,7 +27,7 @@ function view(ctx) {
   const setores = unicos(ops.map(o => o.setor));
   const plan = ops.reduce((s, o) => s + o.planejado, 0), prod = ops.reduce((s, o) => s + o.produzido, 0);
   const fas = store.filtrar('fas', fa => !f.obra || fa.obraId === f.obra);
-  return html`${cabecalho('Relatórios e Indicadores', 'Desempenho da produção, ocorrências e qualidade por período.', botao('Exportar relatório', { acao: 'csv', v: 'outline', icone: 'download' }))}
+  return html`${cabecalho('Relatórios e Indicadores', '', botao('Exportar relatório', { acao: 'csv', v: 'outline', icone: 'download' }))}
     <div class="filters">${busca('f.busca', f.busca)}<input type="month" data-k="f.mes" value="${f.mes}" aria-label="Período do relatório (mês de início da OP)">
       ${filtro('f.obra', [{ v: '', t: 'Todos os projetos' }, ...store.filtrar('obras', o => !o.parentId).map(o => ({ v: o.id, t: o.nome }))], f.obra, 'Projeto do relatório')}
       ${filtro('f.setor', [{ v: '', t: 'Todos os setores' }, ...config.app.setoresOP], f.setor, 'Setor do relatório')}
@@ -36,9 +36,9 @@ function view(ctx) {
       ${stat({ rotulo: 'Ordens atrasadas', valor: ops.filter(o => opAtrasada(o)).length, icone: 'alert', cor: 'red', rodape: 'Prazo de entrega ultrapassado' })}
       ${stat({ rotulo: 'Quantidade produzida', valor: numero(prod, 0), icone: 'package', rodape: 'Unidades registradas' })}
       ${stat({ rotulo: 'Paradas registradas', valor: paradas.length, icone: 'pause', cor: 'amber', rodape: 'Ocorrências na produção' })}</div>
-    <div class="grid-2"><section class="panel"><div class="panel-heading"><div><h2>Desempenho por setor</h2><p>Quantidades planejadas e produzidas</p></div></div>
+    <div class="grid-2"><section class="panel"><div class="panel-heading"><div><h2>Desempenho por setor</h2></div></div>
         ${setores.length ? barras(setores.map(s => { const os = ops.filter(o => o.setor === s); return { rotulo: s, total: os.reduce((a, o) => a + o.planejado, 0), feito: os.reduce((a, o) => a + o.produzido, 0) }; }), { rotuloFeito: 'Produzido' }) : vazio()}</section>
-      <section class="panel"><div class="panel-heading"><div><h2>Principais motivos de parada</h2><p>Ocorrências registradas nas ordens selecionadas</p></div></div>
+      <section class="panel"><div class="panel-heading"><div><h2>Principais motivos de parada</h2></div></div>
         <div class="alert-list">${paradas.map(e => html`<div class="alert-item"><span class="alert-symbol amber">❚❚</span><div class="alert-copy"><strong>${e.descricao.split('.')[0]}</strong><p>${e.ref} · ${e.resolvida ? 'Resolvida' : 'Pendente'}</p></div></div>`)}${paradas.length ? '' : vazio()}</div></section></div>
     <section class="section table-wrap"><div class="table-head"><h2>Qualidade, materiais e FAs</h2></div><div class="stats" style="padding:16px;margin:0">
       ${stat({ rotulo: 'Inspeções aprovadas', valor: eventos.filter(e => e.tipo === 'inspeção' && e.descricao.includes('aprovada')).length, icone: 'check', cor: 'green' })}

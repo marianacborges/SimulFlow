@@ -51,7 +51,7 @@ function viewQuadro(ctx) {
           ${botoesItem(ctx, it, ['avanco', 'mover', 'laudo', 'historico', 'arquivar'])}</article>`;
       })}</section>`;
   };
-  return html`${cabecalho('Produção', 'Etapas/frentes de trabalho por obra, com responsável e itens atribuídos.', html`
+  return html`${cabecalho('Produção', '', html`
       ${obraId && editarEtapas ? botao('Nova etapa', { acao: 'etapa-nova', dados: { obra: obraId }, icone: 'plus' }) : ''}
       ${obraId ? botao('Histórico das etapas', { acao: 'etapas-historico', dados: { obra: obraId }, v: 'outline', icone: 'history' }) : ''}`)}
     <div class="filters">${filtro('quadro.obra', obras.map(o => ({ v: o.id, t: o.nome })), obraId, 'Obra em produção')}
@@ -65,7 +65,7 @@ function viewOPs(ctx) {
   const f = estado.ops;
   const obra = id => store.obter('obras', id);
   const lista = store.filtrar('ops', o => o.status !== 'Concluída' && combinaOP(o, obra(o.obraId), f.busca) && (!f.status || o.status === f.status) && (!f.setor || o.setor === f.setor));
-  return html`${cabecalho('Ordens em produção', 'Acompanhe as operações e registre o andamento das ordens.')}
+  return html`${cabecalho('Ordens em produção', '')}
     <div class="filters">${busca('ops.busca', f.busca)}
       ${filtro('ops.status', [{ v: '', t: 'Todos os status' }, ...config.app.statusOP.filter(s => s !== 'Concluída' && s !== 'Atrasada')], f.status, 'Status da operação')}
       ${filtro('ops.setor', [{ v: '', t: 'Todas as etapas' }, 'Usinagem', 'Montagem', 'Fundição', 'Produção', 'Qualidade'], f.setor, 'Setor da OP')}

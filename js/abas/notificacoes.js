@@ -25,7 +25,7 @@ function view(ctx) {
   const itens = lista(ctx);
   const setores = unicos([...config.app.areas, ...config.app.setoresOP, ...store.todos('eventos').map(e => e.origem)]);
   const pode = regra('notificacoes');
-  return html`${cabecalho('Notificações', 'Comunicação entre setores e acompanhamento das providências.', botao('Marcar todas como lidas', { acao: 'todas-lidas', v: 'outline', icone: 'check', desab: !pode }))}
+  return html`${cabecalho('Notificações', '', botao('Marcar todas como lidas', { acao: 'todas-lidas', v: 'outline', icone: 'check', desab: !pode }))}
     <div class="filters">${busca('f.busca', f.busca)}
       ${filtro('f.destino', [{ v: '', t: 'Todos os destinatários' }, ...setores], f.destino, 'Setor destinatário')}
       ${filtro('f.origem', [{ v: '', t: 'Todas as origens' }, ...setores], f.origem, 'Setor de origem')}

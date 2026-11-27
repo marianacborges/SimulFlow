@@ -23,7 +23,7 @@ function aplicarQuery(ctx) {
 // ---------------- OPs ----------------
 
 function viewOPs(ctx) {
-  return html`${cabecalho('Ordens de Produção', 'Planejamento, acompanhamento e rastreabilidade das OPs.',
+  return html`${cabecalho('Ordens de Produção', '',
     botao('Nova ordem de produção', { acao: 'op-nova', icone: 'plus', desab: !ctx.regra('editarOP') }))}
     ${tabelaOPs(ctx, estado.op)}`;
 }
@@ -39,7 +39,7 @@ function aviso(op) {
 function viewOP(ctx, id) {
   const { store, regra } = ctx;
   const op = store.obter('ops', id);
-  if (!op) return html`${cabecalho('Ordem não encontrada', 'A ordem solicitada não está disponível.')}<a class="btn outline" href="#/pcp/ops">Voltar às ordens</a>`;
+  if (!op) return html`${cabecalho('Ordem não encontrada', '')}<a class="btn outline" href="#/pcp/ops">Voltar às ordens</a>`;
   const obra = store.obter('obras', op.obraId);
   const eventos = store.filtrar('eventos', e => e.opId === op.id).sort((a, b) => b.em.localeCompare(a.em));
   const itens = store.filtrar('itens', i => i.opNumero === op.numero);
@@ -89,7 +89,7 @@ function viewFAs(ctx) {
   const todas = store.todos('fas');
   const lista = listaFAs(ctx);
   const f = estado.fa;
-  return html`${cabecalho('Frentes / Ações (FAs)', 'Ligam setores e itens, com responsável, prazo e status próprios.',
+  return html`${cabecalho('Frentes / Ações (FAs)', '',
     html`${botao('Exportar', { acao: 'fa-csv', v: 'outline', icone: 'download' })}${botao('Nova FA', { acao: 'fa-nova', icone: 'plus', desab: !regra('editarFA') })}`)}
     <div class="stats">${stat({ rotulo: 'Abertas', valor: todas.filter(x => x.status === 'Aberta').length, icone: 'clipboard', rodape: 'Aguardando início', href: '#/pcp/fas?fa=Aberta' })}
       ${stat({ rotulo: 'Em andamento', valor: todas.filter(x => x.status === 'Em andamento').length, icone: 'play', rodape: 'Em execução pelos setores', href: '#/pcp/fas?fa=Em andamento' })}

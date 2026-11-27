@@ -138,7 +138,7 @@ function telaCriarHost() {
 }
 
 function telaLogin(mensagem = '') {
-  telaAcesso(html`<h1>Entrar</h1><p class="muted">Acompanhamento inteligente da produção e integração entre setores</p>
+  telaAcesso(html`<h1>Entrar</h1>
     <form class="auth-form" novalidate>
       ${campo('Usuário', html`<input name="login" required autocomplete="username">`)}
       ${campoSenha('senha', 'Senha')}

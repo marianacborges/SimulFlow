@@ -40,7 +40,7 @@ function viewGeral(ctx) {
   const visiveis = store.filtrar('itens', i => !i.arquivado && i.cicloId && !store.obter('obras', i.obraId)?.arquivado);
   const bloqueados = visiveis.filter(i => motivosBloqueio(i, ensaios, extras).length);
   const resumos = Object.fromEntries(obras.map(o => [o.id, resumo(store, o.id)]));
-  return html`${cabecalho('Programação', 'Atingimento da programação tri-semanal por obra.', regra('editarObras') ? html`<a class="btn primario" href="#/projetos">Cadastrar obra</a>` : '')}
+  return html`${cabecalho('Programação', '', regra('editarObras') ? html`<a class="btn primario" href="#/projetos">Cadastrar obra</a>` : '')}
     <div class="status-strip"><span><i class="live-dot"></i> Atualizado às ${hora(new Date().toISOString())}</span>${botao('Histórico', { acao: 'prog-historico', v: 'ghost', tam: 'sm', icone: 'history' })}</div>
     <div class="stats">${stat({ rotulo: 'Obras ativas', valor: obras.length, icone: 'target', rodape: 'Programação por contrato' })}
       ${stat({ rotulo: 'Itens em atraso', valor: visiveis.filter(i => itemAtrasado(i, store.obter('ciclos', i.cicloId), extras)).length, icone: 'alert', cor: 'amber', rodape: 'Prazo ou avanço abaixo do esperado' })}

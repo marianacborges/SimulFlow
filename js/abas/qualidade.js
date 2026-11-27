@@ -22,7 +22,7 @@ function viewInspecoes(ctx) {
   const inspecoes = store.filtrar('eventos', e => e.tipo === 'inspeção' && combinaTexto(f.busca, [e.ref, e.descricao, ...camposBuscaOP(store.obter('ops', e.opId), obra(store.obter('ops', e.opId)?.obraId))]) &&
     (!f.resultado || f.resultado === 'pendente' || e.descricao.toLowerCase().includes(f.resultado))).sort((a, b) => b.em.localeCompare(a.em));
   const todas = store.filtrar('eventos', e => e.tipo === 'inspeção');
-  return html`${cabecalho('Controle da Qualidade', 'Inspeções, aprovações e registro de não conformidades.')}
+  return html`${cabecalho('Controle da Qualidade', '')}
     <div class="stats">${stat({ rotulo: 'Aguardando inspeção', valor: ops.filter(o => o.status === 'Aguardando qualidade').length, icone: 'clipboard', cor: 'cyan', rodape: 'Ordens prontas para avaliação' })}
       ${stat({ rotulo: 'Inspeções aprovadas', valor: todas.filter(e => e.descricao.includes('aprovada')).length, icone: 'check', cor: 'green', rodape: 'Produtos liberados' })}
       ${stat({ rotulo: 'Inspeções reprovadas', valor: todas.filter(e => e.descricao.includes('reprovada')).length, icone: 'x', cor: 'red', rodape: 'Não conformidades registradas' })}
@@ -45,7 +45,7 @@ function viewLaudos(ctx) {
   const itens = store.filtrar('itens', i => !i.arquivado && (!f.status || (i.laudo?.status || 'Pendente') === f.status) &&
     combinaTexto(f.busca, [i.codigo, i.serie, i.descricao, i.opNumero, i.laudo?.status, store.obter('obras', i.obraId)?.nome, store.obter('pedidos', i.pedidoId)?.numero]))
     .sort((a, b) => a.codigo.localeCompare(b.codigo, 'pt-BR', { numeric: true }));
-  return html`${cabecalho('Laudos de itens', 'Concluir um item (100%) exige laudo aprovado; laudo reprovado limita o avanço a 99% e avisa Produção e PCP.')}
+  return html`${cabecalho('Laudos de itens', '')}
     <div class="filters">${busca('laudo.busca', f.busca, 'Buscar item, série, OP, obra ou pedido...')}
       ${filtro('laudo.status', [{ v: '', t: 'Todos os laudos' }, { v: 'Pendente', t: 'Aguardando laudo' }, 'Aprovado', 'Reprovado'], f.status, 'Laudo do item')}<span class="filter-count">${itens.length} itens</span></div>
     <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Item / série</th><th>Obra / pedido</th><th>OP</th><th>Avanço</th><th>Laudo</th><th>Ações</th></tr></thead><tbody>
@@ -71,7 +71,7 @@ function viewEnsaios(ctx) {
   const grupos = [...GRUPOS, ...(f.fechados ? ['aprovado', 'cancelado'] : [])];
   const reprovadosSemRetrabalho = abertos.filter(e => e.status === 'reprovado' && !store.achar('extras', x => x.origemId === e.id && x.tipo === 'retrabalho' && x.status === 'concluída')).length;
   const pessoas = store.filtrar('usuarios', p => p.ativo && (p.host || (p.funcoes || []).some(x => ['inspetor', 'nii', 'niii'].includes(x))));
-  return html`${cabecalho('Acompanhamento de Ensaios', 'Execução, verificação NII e verificação NIII.', html`${ctx.host ? html`<a class="btn outline" href="#/configuracoes">Configurações</a>` : ''}
+  return html`${cabecalho('Acompanhamento de Ensaios', '', html`${ctx.host ? html`<a class="btn outline" href="#/configuracoes">Configurações</a>` : ''}
       ${botao('Solicitar ensaio', { acao: 'ensaio-novo', icone: 'plus', desab: !regra('solicitarEnsaio') })}`)}
     <div class="stats">${stat({ rotulo: 'Ensaios em aberto', valor: abertos.length, icone: 'flask', rodape: 'Solicitação e verificação' })}
       ${stat({ rotulo: 'Aguardando verificações', valor: abertos.filter(e => e.status.startsWith('aguardando')).length, icone: 'clock', rodape: 'NII e NIII' })}

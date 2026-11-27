@@ -34,7 +34,7 @@ function view(ctx) {
     const doObra = ops.filter(op => op.obraId === o.id || store.obter('obras', op.obraId)?.parentId === o.id);
     return { rotulo: o.nome, total: doObra.reduce((s, x) => s + x.planejado, 0), feito: doObra.reduce((s, x) => s + x.produzido, 0) };
   }).filter(l => l.total);
-  return html`${cabecalho('Dashboard', 'Visão geral das OPs, FAs, programação e integração entre os setores.', html`<span class="badge neutral">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`)}
+  return html`${cabecalho('Dashboard', '', html`<span class="badge neutral">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`)}
     <h2 style="margin-bottom:10px">Ordens de Produção</h2>
     <div class="stats">${stat({ rotulo: 'Total de ordens', valor: pad(ops.length), icone: 'clipboard', rodape: 'Ordens cadastradas no sistema', href: linkOP('') })}
       ${stat({ rotulo: 'Em andamento', valor: pad(ops.filter(o => o.status === 'Em andamento').length), icone: 'play', rodape: 'Produção em execução', href: linkOP('Em andamento') })}
@@ -48,23 +48,23 @@ function view(ctx) {
       ${stat({ rotulo: 'Concluídas', valor: pad(fas.filter(f => f.status === 'Concluída').length), icone: 'check', cor: 'green', rodape: 'Finalizadas', href: linkFA('Concluída') })}
       ${stat({ rotulo: 'FAs atrasadas', valor: pad(fasAtrasadas.length), icone: 'alert', cor: 'red', rodape: 'Prazo ultrapassado', href: linkFA('Atrasada') })}</div>
     <div class="grid-3">
-      <section class="panel"><div class="panel-heading"><div><h2>OPs por status</h2><p>Visão geral das ordens de produção</p></div></div>
+      <section class="panel"><div class="panel-heading"><div><h2>OPs por status</h2></div></div>
         ${rosca(statusOP.map(s => ({ rotulo: s, valor: ops.filter(o => o.status === s).length, cor: tom(s), href: linkOP(s) })), ops.length, 'ordens no total')}</section>
-      <section class="panel"><div class="panel-heading"><div><h2>FAs por status</h2><p>Frentes e ações entre setores</p></div></div>
+      <section class="panel"><div class="panel-heading"><div><h2>FAs por status</h2></div></div>
         ${rosca([...config.app.statusFA.map(s => ({ rotulo: s, valor: fas.filter(f => f.status === s && !faAtrasada(f)).length, cor: tom(s), href: linkFA(s) })), { rotulo: 'Atrasada', valor: fasAtrasadas.length, cor: 'red', href: linkFA('Atrasada') }], fas.length, 'FAs no total')}</section>
-      <section class="panel"><div class="panel-heading"><div><h2>Produção por obra</h2><p>Quantidade produzida × planejada nas OPs</p></div></div>${porObra.length ? barras(porObra, { rotuloTotal: 'Planejado', rotuloFeito: 'Produzido' }) : vazio()}</section>
+      <section class="panel"><div class="panel-heading"><div><h2>Produção por obra</h2></div></div>${porObra.length ? barras(porObra, { rotuloTotal: 'Planejado', rotuloFeito: 'Produzido' }) : vazio()}</section>
     </div>
     ${verPCP ? html`<div class="section">${tabelaOPs(ctx, estado.op, { compacto: true })}</div>` : ''}
     <div class="grid-2 section">
-      <section class="panel"><div class="panel-heading"><div><h2>Atrasos <span class="count-pill">${fasAtrasadas.length + itensAtrasados.length + opsAtrasadas.length}</span></h2><p>FAs, itens e OPs com prazo ou avanço em atraso</p></div></div>
+      <section class="panel"><div class="panel-heading"><div><h2>Atrasos <span class="count-pill">${fasAtrasadas.length + itensAtrasados.length + opsAtrasadas.length}</span></h2></div></div>
         <div class="alert-list">${opsAtrasadas.slice(0, 3).map(o => html`<div class="alert-item"><span class="alert-symbol red">!</span><div class="alert-copy"><strong><a class="link" href="#/pcp/op/${o.id}">${o.numero}</a> · ${o.produto}</strong><p>Prazo ${data(o.prazo)} · ${o.status}</p></div>${badge('OP', 'red')}</div>`)}
           ${fasAtrasadas.slice(0, 4).map(f => html`<div class="alert-item"><span class="alert-symbol red">!</span><div class="alert-copy"><strong><a class="link" href="#/pcp/fa/${f.id}">${f.numero}</a> · ${f.titulo}</strong><p>${f.setorOrigem} → ${f.setorDestino} · prazo ${data(f.prazo)} · ${f.responsavelNome}</p></div>${badge('FA', 'red')}</div>`)}
           ${itensAtrasados.slice(0, 4).map(i => html`<div class="alert-item"><span class="alert-symbol amber">!</span><div class="alert-copy"><strong>${pode('projetos') ? html`<a class="link" href="#/projetos/obra/${i.obraId}?item=${i.id}">${i.codigo}</a>` : i.codigo} · ${store.obter('obras', i.obraId)?.nome}</strong><p>${Math.round(percentual(i, extras))}% · prazo ${data(i.prazo)}${diasAtraso(i) ? ` · ${diasAtraso(i)} ${diasAtraso(i) === 1 ? 'dia' : 'dias'} de atraso` : ' · avanço abaixo do esperado'}</p></div>${badge('Item', 'amber')}</div>`)}
           ${opsAtrasadas.length + fasAtrasadas.length + itensAtrasados.length ? '' : vazio('Nenhum atraso.')}</div></section>
-      <section class="panel"><div class="panel-heading"><div><h2>Alertas e ocorrências <span class="count-pill">${alertas.length}</span></h2><p>Pontos de atenção que precisam de uma ação</p></div>${pode('notificacoes') ? html`<a class="link" href="#/notificacoes">Ver todos</a>` : ''}</div>
+      <section class="panel"><div class="panel-heading"><div><h2>Alertas e ocorrências <span class="count-pill">${alertas.length}</span></h2></div>${pode('notificacoes') ? html`<a class="link" href="#/notificacoes">Ver todos</a>` : ''}</div>
         <div class="alert-list">${alertas.map(e => html`<div class="alert-item"><span class="alert-symbol amber">!</span><div class="alert-copy"><strong>${pode('notificacoes') ? html`<a class="link" href="#/notificacoes?q=${encodeURIComponent(e.ref)}">${e.ref}</a>` : e.ref} · ${e.descricao.split('.')[0]}</strong><p>${e.descricao.split('.').slice(1).join('.')}</p><small>${e.origem} → ${e.destinatarios.join(' e ')}</small></div>${badge('Alta')}</div>`)}
           ${alertas.length ? '' : vazio('Nenhum alerta pendente.')}</div>
-        <div class="panel-heading" style="margin-top:16px"><div><h2>Últimas movimentações</h2><p>Atualizações compartilhadas entre os setores</p></div>${pode('historico') ? html`<a class="link" href="#/historico">Ver histórico</a>` : ''}</div>
+        <div class="panel-heading" style="margin-top:16px"><div><h2>Últimas movimentações</h2></div>${pode('historico') ? html`<a class="link" href="#/historico">Ver histórico</a>` : ''}</div>
         <div class="alert-list">${ultimas.map(e => html`<div class="alert-item"><span class="alert-symbol ${e.prioridade === 'Alta' ? 'amber' : 'blue'}">•</span><div class="alert-copy"><strong>${pode('historico') ? html`<a class="link" href="#/historico?q=${encodeURIComponent(e.ref)}">${e.ref}</a>` : e.ref} · ${e.tipo}</strong><p>${e.descricao}</p><small>${e.origem} · ${data(e.em)} · ${hora(e.em)}</small></div></div>`)}
           ${ultimas.length ? '' : vazio()}</div></section>
     </div>`;

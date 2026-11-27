@@ -61,7 +61,7 @@ function limparCache() {
 // ---------------- pedaços de tela ----------------
 
 function semConexao() {
-  return html`${cabecalho('Presença operacional', 'Colaboradores presentes no dia, lidos por tag NFC no celular.')}
+  return html`${cabecalho('Presença operacional', '')}
     <div class="panel"><h2>Conecte este aparelho à planilha Google</h2>
       <p class="muted" style="margin:8px 0 14px">Os registros de presença ficam numa planilha Google com o script do SimulFlow. Informe a URL do app da Web e o token de acesso deste aparelho.</p>
       <a class="btn primario" href="#/presenca/conexao">${ic('link')}<span>Configurar conexão</span></a></div>`;
@@ -112,7 +112,7 @@ function viewDia(ctx, p, { hoje }) {
     ${botao('XLSX', { acao: 'exportar', dados: { formato: 'xlsx', data: p.data }, v: 'outline', icone: 'sheet' })}
     ${con?.planilhaUrl ? html`<a class="btn outline" href="${con.planilhaUrl}" target="_blank" rel="noopener">${ic('file')}<span>Google Planilhas</span></a>` : ''}
     ${hoje && p.aberto && ehAdminPlanilha(con) && ctx.pode('presenca', true) ? botao('Fechar turno agora', { acao: 'fechar-turno', v: 'perigo', icone: 'lock' }) : ''}`;
-  return html`${cabecalho(hoje ? 'Presença operacional' : `Planilha de ${dataBR(p.data)}`, hoje ? `Planilha do dia · ${dataBR(p.data)}` : 'Somente leitura (snapshot do fechamento)', acoes)}
+  return html`${cabecalho(hoje ? 'Presença operacional' : `Planilha de ${dataBR(p.data)}`, hoje ? dataBR(p.data) : '', acoes)}
     <div class="status-strip"><span>${situacao}</span><span class="muted">Turno administrativo ${p.turno.inicio}–${p.turno.fim} (${p.turno.fuso})</span>
       ${hoje ? html`<span>${carga.erro.hoje ? html`<span class="red">Sem atualização: ${carga.erro.hoje}</span>` : html`<i class="live-dot"></i> Ao vivo · atualizado às ${horaAgora(carga.em.hoje)}`}</span>` : ''}</div>
     <div class="stats">${stat({ rotulo: 'Presentes', valor: p.contadores.presentes, icone: 'users', cor: 'green', rodape: hoje && p.aberto ? 'Efetivo disponível agora' : 'Na planilha do dia' })}
@@ -130,7 +130,7 @@ function viewDia(ctx, p, { hoje }) {
 
 function viewPlanilha(ctx) {
   garantir('hoje', recarregarHoje, dados.hoje);
-  if (!dados.hoje) return html`${cabecalho('Presença operacional', 'Planilha do dia')}${erroCarga('hoje', 'Não foi possível carregar a planilha', 'atualizar-hoje')}${carga.erro.hoje ? '' : html`<div class="panel"><p class="muted">Carregando a planilha do dia…</p></div>`}`;
+  if (!dados.hoje) return html`${cabecalho('Presença operacional', '')}${erroCarga('hoje', 'Não foi possível carregar a planilha', 'atualizar-hoje')}${carga.erro.hoje ? '' : html`<div class="panel"><p class="muted">Carregando a planilha do dia…</p></div>`}`;
   return viewDia(ctx, dados.hoje, { hoje: true });
 }
 
@@ -172,7 +172,7 @@ function viewColaboradores(ctx) {
   const editavel = ctx.pode('presenca', true);
   const lista = (dados.colaboradores || []).filter(c => combinaTexto(f.busca, [c.nome, c.matricula, c.funcao, c.tag]) && (!f.ativos || (f.ativos === 'sim') === c.ativo))
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  return html`${cabecalho('Colaboradores', 'Cadastro usado na leitura das tags: nome, matrícula, função, código da tag e situação.', html`
+  return html`${cabecalho('Colaboradores', '', html`
       ${botao('Modelo CSV', { acao: 'modelo-csv', v: 'outline', icone: 'download' })}
       ${botao('Importar CSV', { acao: 'importar-csv', v: 'outline', icone: 'upload', desab: !editavel })}
       ${botao('Novo colaborador', { acao: 'colab-novo', icone: 'plus', desab: !editavel })}`)}
@@ -199,7 +199,7 @@ function viewHistorico(ctx, data) {
   }
   garantir('historico', recarregarHistorico, dados.historico);
   const lista = (dados.historico || []).filter(h => combinaTexto(estado.hist.busca, [dataBR(h.data), h.tipoFechamento]));
-  return html`${cabecalho('Histórico', 'Planilhas fechadas, com o snapshot de cada dia.', botao('Atualizar', { acao: 'atualizar-historico', v: 'outline', icone: 'restore' }))}
+  return html`${cabecalho('Histórico', '', botao('Atualizar', { acao: 'atualizar-historico', v: 'outline', icone: 'restore' }))}
     ${erroCarga('historico', 'Não foi possível carregar o histórico', 'atualizar-historico')}
     <div class="filters">${busca('hist.busca', estado.hist.busca, 'Buscar data (dd/mm/aaaa)...')}<span class="filter-count">${dados.historico ? lista.length + ' dias' : 'Carregando…'}</span></div>
     <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Data</th><th>Presentes</th><th>Ativos</th><th>Fechamento</th><th></th></tr></thead><tbody>
@@ -214,7 +214,7 @@ function viewConexao(ctx) {
   const con = conexao();
   const admin = ehAdminPlanilha(con);
   if (admin) garantir('acessos', recarregarAcessos, dados.acessos);
-  return html`${cabecalho('Conexão com a planilha', 'Cada aparelho guarda a URL do app da Web e o seu próprio token de acesso.')}
+  return html`${cabecalho('Conexão com a planilha', '')}
     ${con ? html`<div class="panel" style="margin-bottom:16px"><div class="title-row"><h2>Conectado como ${con.nome}</h2>${badge(con.perfil, con.perfil === 'admin' ? 'blue' : con.perfil === 'leitor' ? 'neutral' : 'green')}</div>
       <p class="muted small" style="margin:6px 0 12px;word-break:break-all">${con.url}</p>
       <div class="toolbar">${botao('Testar de novo', { acao: 'testar-conexao', v: 'outline', icone: 'check' })}${botao('Desconectar este aparelho', { acao: 'desconectar', v: 'outline', icone: 'x' })}</div></div>` : ''}
