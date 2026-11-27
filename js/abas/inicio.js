@@ -1,6 +1,6 @@
 // Aba Dashboard (Início): resumo de OPs e FAs por status e atrasos, alertas e últimas movimentações e,
 // logo abaixo, o acompanhamento da programação com filtros recolhidos (componentes/painel-programacao.js).
-import { html, cabecalho, stat, badge, vazio, delegar, botao } from '../core/ui.js';
+import { html, raw, ic, cabecalho, stat, badge, vazio, delegar, botao, filtro } from '../core/ui.js';
 import { config } from '../core/config.js';
 import { data, hora, hoje } from '../core/util.js';
 import { controleEstado } from '../componentes/comuns.js';
@@ -9,20 +9,36 @@ import { rosca, barras } from '../componentes/graficos.js';
 import { opAtrasada, faAtrasada, statusExibidoFA, itemAtrasado, percentual, diasAtraso } from '../data/regras.js';
 import { tom } from '../core/ui.js';
 import { secaoProgramacao, ligarProgramacao, lembrarListasAbertas } from '../componentes/painel-programacao.js';
+import { criarFiltroDash, opcoesOperacao, resumoFiltrosDash, PERIODOS_DASH, STATUS_DASH } from '../data/filtros-dashboard.js';
 
-const estado = { op: { busca: '', status: '', setor: '', pagina: 1 } };
+const estado = { op: { busca: '', status: '', setor: '', pagina: 1 }, dash: { periodo: '', operacao: '', status: '', aberto: false } };
 let desligar = null;
 let desligarProgramacao = null;
 const pad = n => String(n).padStart(2, '0');
 
+/** Filtros do topo (Período, Operação, Status), recolhidos quando não se está configurando. */
+function caixaFiltros(ctx) {
+  const d = estado.dash;
+  const operacoes = opcoesOperacao(ctx.store);
+  return html`<details class="painel-filtros" data-caixa-dash${d.aberto ? raw(' open') : ''}>
+    <summary>${ic('settings')}<span class="painel-filtros-resumo"><strong>Filtros</strong> ${resumoFiltrosDash(d)}</span><span class="painel-filtros-acao">Configurar</span></summary>
+    <div class="painel-filtros-corpo"><div class="toolbar">
+      <label class="field"><span class="field-label">Período</span>${filtro('dash.periodo', PERIODOS_DASH, d.periodo, 'Período')}</label>
+      <label class="field"><span class="field-label">Operação</span>${filtro('dash.operacao', [{ v: '', t: 'Todas as operações' }, ...operacoes.map(o => ({ v: o, t: o }))], d.operacao, 'Operação (etapa de produção)')}</label>
+      <label class="field"><span class="field-label">Status</span>${filtro('dash.status', STATUS_DASH, d.status, 'Status')}</label>
+      ${d.periodo || d.operacao || d.status ? botao('Limpar filtros', { acao: 'limpar-dash', v: 'ghost', icone: 'x' }) : ''}
+    </div></div></details>`;
+}
+
 function view(ctx) {
   const { store, pode } = ctx;
-  const ops = store.todos('ops');
-  const fas = store.todos('fas');
+  const F = criarFiltroDash(store, estado.dash);
+  const ops = store.todos('ops').filter(F.op);
+  const fas = store.todos('fas').filter(F.fa);
   const extras = store.todos('extras');
   const opsAtrasadas = ops.filter(o => opAtrasada(o));
   const fasAtrasadas = fas.filter(f => faAtrasada(f)).sort((a, b) => a.prazo.localeCompare(b.prazo));
-  const itensAtrasados = store.filtrar('itens', i => !i.arquivado && !store.obter('obras', i.obraId)?.arquivado && itemAtrasado(i, store.obter('ciclos', i.cicloId), extras))
+  const itensAtrasados = store.filtrar('itens', i => !i.arquivado && !store.obter('obras', i.obraId)?.arquivado && itemAtrasado(i, store.obter('ciclos', i.cicloId), extras) && F.itemAtrasado(i))
     .sort((a, b) => diasAtraso(b) - diasAtraso(a));
   const alertas = store.filtrar('eventos', e => !e.resolvida && e.prioridade === 'Alta').sort((a, b) => b.em.localeCompare(a.em)).slice(0, 4);
   const ultimas = store.todos('eventos').slice().sort((a, b) => b.em.localeCompare(a.em)).slice(0, 5);
@@ -35,8 +51,9 @@ function view(ctx) {
     return { rotulo: o.nome, total: doObra.reduce((s, x) => s + x.planejado, 0), feito: doObra.reduce((s, x) => s + x.produzido, 0) };
   }).filter(l => l.total);
   return html`${cabecalho('Dashboard', '', html`<span class="badge neutral">${new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>`)}
+    ${caixaFiltros(ctx)}
     <h2 style="margin-bottom:10px">Ordens de Produção</h2>
-    <div class="stats">${stat({ rotulo: 'Total de ordens', valor: pad(ops.length), icone: 'clipboard', rodape: 'Ordens cadastradas no sistema', href: linkOP('') })}
+    <div class="stats">${stat({ rotulo: 'Total de ordens', valor: pad(ops.length), icone: 'clipboard', rodape: F.ativo ? 'Ordens dentro dos filtros' : 'Ordens cadastradas no sistema', href: linkOP('') })}
       ${stat({ rotulo: 'Em andamento', valor: pad(ops.filter(o => o.status === 'Em andamento').length), icone: 'play', rodape: 'Produção em execução', href: linkOP('Em andamento') })}
       ${stat({ rotulo: 'Concluídas', valor: pad(ops.filter(o => o.status === 'Concluída').length), icone: 'check', cor: 'green', rodape: 'Finalizadas e aprovadas', href: linkOP('Concluída') })}
       ${stat({ rotulo: 'Ordens atrasadas', valor: pad(opsAtrasadas.length), icone: 'alert', cor: 'red', rodape: 'Necessitam atenção do PCP', href: linkOP('Atrasada') })}</div>
@@ -54,7 +71,7 @@ function view(ctx) {
         ${rosca([...config.app.statusFA.map(s => ({ rotulo: s, valor: fas.filter(f => f.status === s && !faAtrasada(f)).length, cor: tom(s), href: linkFA(s) })), { rotulo: 'Atrasada', valor: fasAtrasadas.length, cor: 'red', href: linkFA('Atrasada') }], fas.length, 'FAs no total')}</section>
       <section class="panel"><div class="panel-heading"><div><h2>Produção por obra</h2></div></div>${porObra.length ? barras(porObra, { rotuloTotal: 'Planejado', rotuloFeito: 'Produzido' }) : vazio()}</section>
     </div>
-    ${verPCP ? html`<div class="section">${tabelaOPs(ctx, estado.op, { compacto: true })}</div>` : ''}
+    ${verPCP ? html`<div class="section">${tabelaOPs(ctx, estado.op, { compacto: true, filtro: F.op })}</div>` : ''}
     <div class="grid-2 section">
       <section class="panel"><div class="panel-heading"><div><h2>Atrasos <span class="count-pill">${fasAtrasadas.length + itensAtrasados.length + opsAtrasadas.length}</span></h2></div></div>
         <div class="alert-list">${opsAtrasadas.slice(0, 3).map(o => html`<div class="alert-item"><span class="alert-symbol red">!</span><div class="alert-copy"><strong><a class="link" href="#/pcp/op/${o.id}">${o.numero}</a> · ${o.produto}</strong><p>Prazo ${data(o.prazo)} · ${o.status}</p></div>${badge('OP', 'red')}</div>`)}
@@ -75,7 +92,14 @@ export default {
   titulo: 'Dashboard',
   onMount(el, ctx) {
     const ctl = controleEstado(estado, ctx);
-    desligar = delegar(el, { mudanca: ctl.mudanca, cliques: { ...ctl.cliques, ...cliquesOP(ctx) } });
+    // Mudar um filtro do topo mantém a caixa aberta; clicar no resumo abre/recolhe.
+    const mudanca = (k, v) => { if (k.startsWith('dash.')) estado.dash.aberto = true; ctl.mudanca(k, v); };
+    const limparDash = () => { Object.assign(estado.dash, { periodo: '', operacao: '', status: '', aberto: false }); estado.op.pagina = 1; ctx.rerender(); };
+    desligar = delegar(el, { mudanca, cliques: { ...ctl.cliques, ...cliquesOP(ctx), 'limpar-dash': limparDash } });
+    const aoClicarResumo = e => { const s = e.target.closest('[data-caixa-dash] > summary'); if (s) estado.dash.aberto = !s.parentElement.open; };
+    el.addEventListener('click', aoClicarResumo, true);
+    const desligarBase = desligar;
+    desligar = () => { desligarBase(); el.removeEventListener('click', aoClicarResumo, true); };
     desligarProgramacao = ligarProgramacao(el, ctx);
   },
   onUnmount() { desligar?.(); desligarProgramacao?.(); },

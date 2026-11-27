@@ -250,3 +250,7 @@ details.multi[open] .check-list { margin-top: 6px; background: var(--card); }
 .painel-filtros[open] .painel-filtros-acao { display: none; }
 .painel-filtros[open] .painel-filtros-resumo { white-space: normal; }
 .painel-filtros > form { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+.painel-filtros-corpo { padding: 12px 16px 16px; border-top: 1px solid var(--border); }
+[data-caixa-dash] { margin-bottom: 22px; }
+.painel-filtros-corpo .toolbar { align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.painel-filtros-corpo .field { min-width: 200px; }

@@ -196,6 +196,60 @@ export async function executar(raiz) {
     assert.ok(Number(v.indicadores[3].valor) >= 1);
   });
 
+  // ---- Filtros do topo do Dashboard (Período, Operação, Status) ----
+  const FD = await mod('js/data/filtros-dashboard.js');
+  t('dashboard: período Diário = hoje, Semanal = últimos 7 dias, Mensal = últimos 30 dias', () => {
+    assert.deepEqual(FD.intervaloDash('diario', '2026-11-27'), { inicio: '2026-11-27', fim: '2026-11-27' });
+    assert.deepEqual(FD.intervaloDash('semanal', '2026-11-27'), { inicio: '2026-11-21', fim: '2026-11-27' });
+    assert.deepEqual(FD.intervaloDash('mensal', '2026-11-27'), { inicio: '2026-10-29', fim: '2026-11-27' });
+    assert.equal(FD.intervaloDash('', '2026-11-27'), null);
+  });
+  t('dashboard: status agrupado (pendente inclui atrasada)', () => {
+    const dia = '2026-11-27';
+    const op = (status, prazo = '2026-12-31') => FD.grupoStatusOP({ status, prazo }, dia);
+    assert.equal(op('Em andamento'), 'andamento');
+    assert.equal(op('Em andamento', '2026-11-20'), 'pendente');
+    assert.equal(op('Aguardando material'), 'pendente');
+    assert.equal(op('Aguardando qualidade'), 'pendente');
+    assert.equal(op('Parada'), 'interrompida');
+    assert.equal(op('Parada', '2026-11-20'), 'interrompida');
+    assert.equal(op('Concluída', '2026-11-20'), 'concluida');
+    const fa = (status, prazo = '2026-12-31') => FD.grupoStatusFA({ status, prazo }, dia);
+    assert.equal(fa('Aberta'), 'pendente');
+    assert.equal(fa('Em andamento'), 'andamento');
+    assert.equal(fa('Em andamento', '2026-11-20'), 'pendente');
+    assert.equal(fa('Concluída'), 'concluida');
+    assert.equal(fa('Cancelada'), 'interrompida');
+  });
+  t('dashboard: período pega o que esteve em execução (atrasada e não concluída vai até hoje)', () => {
+    const dia = '2026-11-27', semana = FD.intervaloDash('semanal', dia), hojeI = FD.intervaloDash('diario', dia);
+    assert.equal(FD.opNoPeriodo({ status: 'Em andamento', inicio: '2026-11-01', prazo: '2026-12-10' }, hojeI, dia), true);
+    assert.equal(FD.opNoPeriodo({ status: 'Em andamento', inicio: '2026-09-01', prazo: '2026-10-01' }, hojeI, dia), true);
+    assert.equal(FD.opNoPeriodo({ status: 'Em andamento', inicio: '2026-12-05', prazo: '2026-12-20' }, semana, dia), false);
+    assert.equal(FD.opNoPeriodo({ status: 'Concluída', inicio: '2026-09-01', prazo: '2026-10-01' }, semana, dia), false);
+    assert.equal(FD.opNoPeriodo({ status: 'Concluída', inicio: '2026-09-01', prazo: '2026-10-01', atualizadoEm: '2026-11-25T10:00:00Z' }, semana, dia), true);
+    assert.equal(FD.faNoPeriodo({ status: 'Concluída', criadoEm: '2026-10-01T00:00:00Z', prazo: '2026-10-10', concluidaEm: '2026-10-09T12:00:00Z' }, semana, dia), false);
+    assert.equal(FD.faNoPeriodo({ status: 'Aberta', criadoEm: '2026-11-26T00:00:00Z', prazo: '2026-12-10' }, hojeI, dia), true);
+  });
+  t('dashboard: operação = etapa de produção (OPs e FAs ligadas aos itens da etapa)', () => {
+    const store = criarStore(criarAdaptadorMemoria()); store.carregar(); store.substituir(dadosDemonstracao());
+    const ops = FD.opcoesOperacao(store);
+    assert.ok(ops.length >= 3 && ops.includes('Soldagem') && new Set(ops).size === ops.length);
+    const nomeEtapa = id => store.obter('etapas', id)?.nome;
+    for (const nome of ops) {
+      const F = FD.criarFiltroDash(store, { operacao: nome });
+      const numeros = new Set(store.filtrar('itens', i => !i.arquivado && nomeEtapa(i.etapaId) === nome).map(i => i.opNumero).filter(Boolean));
+      assert.deepEqual(store.todos('ops').filter(F.op).map(o => o.numero).sort(), [...numeros].sort());
+    }
+    const todos = FD.criarFiltroDash(store, {});
+    assert.equal(store.todos('ops').filter(todos.op).length, store.todos('ops').length);
+    assert.equal(todos.ativo, false);
+    const pend = FD.criarFiltroDash(store, { status: 'pendente' });
+    assert.ok(store.todos('ops').filter(pend.op).every(o => FD.grupoStatusOP(o) === 'pendente'));
+    assert.equal(FD.criarFiltroDash(store, { status: 'concluida' }).itemAtrasado({ id: 'x' }), false);
+    assert.match(FD.resumoFiltrosDash({ periodo: 'semanal', operacao: 'Soldagem', status: 'pendente' }), /Semanal.*Soldagem.*Pendente/);
+  });
+
   let falhas = 0;
   for (const [nome, fn] of testes) {
     try { await fn(); console.log('  ✓ ' + nome); } catch (e) { falhas++; console.log('  ✗ ' + nome + '\n      ' + (e.message || e)); }
