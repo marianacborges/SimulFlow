@@ -72,7 +72,7 @@ const comandos = {
       if (Number.isNaN(Date.parse(inicio))) falhar('Use --relogio=AAAA-MM-DDTHH:MM:SS-03:00');
       g.relogio.definir(inicio);
     }
-    const tokens = { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor') };
+    const tokens = { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor'), sistema: g.criarToken('PC da Produção (emulador)', 'sistema') };
     if (!vazio) {
       for (const [nome, matricula, funcao, tag] of [['Ana Souza', '00123', 'Soldador', '04:A1:B2:C3'], ['Bruno Lima', '00456', 'Montador', '04:D4:E5:F6'], ['Carla Dias', '00789', 'Soldador', '04:11:22:33'], ['Diego Alves', '01011', 'Pintor', '']]) {
         g.api('colaboradores.salvar', { colaborador: { nome, matricula, funcao, tag, ativo: true } }, tokens.planejamento);
@@ -265,6 +265,15 @@ const comandos = {
       if (!ENTIDADES.includes(ent)) erro(`campos.json: entidade desconhecida "${ent}"`);
       for (const c of lista) if (!TIPOS_CAMPO.includes(c.tipo)) erro(`campos.json: tipo inválido em ${ent}.${c.nome}`);
     }
+    // App instalável: service worker e manifestos com ícones existentes.
+    if (!fs.existsSync(path.join(RAIZ, 'sw.js'))) erro('sw.js não encontrado');
+    for (const man of ['manifest.webmanifest', 'leitura.webmanifest']) {
+      let m;
+      try { m = JSON.parse(fs.readFileSync(path.join(RAIZ, man), 'utf8')); } catch (e) { erro(`${man} inválido: ${e.message}`); continue; }
+      for (const k of ['name', 'start_url', 'display', 'icons']) if (!m[k]) erro(`${man} sem "${k}"`);
+      for (const i of m.icons || []) if (!fs.existsSync(path.join(RAIZ, i.src))) erro(`${man}: ícone inexistente ${i.src}`);
+      if (!(m.icons || []).some(i => i.sizes === '512x512') || !(m.icons || []).some(i => i.sizes === '192x192')) erro(`${man}: precisa de ícones 192x192 e 512x512`);
+    }
     const proibido = ['lov', 'able'].join('');
     for (const arq of listarArquivos(RAIZ)) {
       const nome = path.relative(RAIZ, arq);
@@ -337,7 +346,9 @@ function empacotar() {
   const favicon = 'data:image/png;base64,' + fs.readFileSync(path.join(RAIZ, 'favicon.png')).toString('base64');
   const registroAbas = abas.map(a => `${JSON.stringify(a.modulo)}: __req(${JSON.stringify(path.join('js/abas', a.modulo))}).default`).join(',\n  ');
   const cabeca = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8').match(/<head>([\s\S]*?)<\/head>/)[1]
-    .replace(/<link rel="stylesheet"[^>]*>\s*/g, '').replace(/href="favicon.png"/, `href="${favicon}"`);
+    .replace(/<link rel="stylesheet"[^>]*>\s*/g, '').replace(/href="favicon.png"/, `href="${favicon}"`)
+    // Arquivo único (file://): sem manifesto de app nem service worker.
+    .replace(/<link rel="(manifest|apple-touch-icon)"[^>]*>\s*/g, '').replace(/<script>if\('serviceWorker'[\s\S]*?<\/script>\s*/, '');
   const script = `(function () {
 var __mods = {}, __cache = {};
 function __def(n, f) { __mods[n] = f; }

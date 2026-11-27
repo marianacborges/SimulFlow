@@ -17,8 +17,12 @@ var CONFIG = {
     HISTORICO: 'Histórico detalhado',
     ACESSOS: 'Acessos',
     HOJE: 'Hoje',
+    DADOS: 'Dados',
+    CONFIG: 'Config',
   },
-  PERFIS: ['leitor', 'planejamento', 'admin'],
+  // leitor: só registra leituras · sistema: computador de setor (dados do SimulFlow, sem presença)
+  // planejamento: presença + dados · admin: tudo, inclusive fechar o turno, acessos e substituir dados.
+  PERFIS: ['leitor', 'sistema', 'planejamento', 'admin'],
 };
 
 /** Relógio (os testes substituem esta função para simular horários). */

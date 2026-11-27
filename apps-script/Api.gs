@@ -1,7 +1,8 @@
 /**
  * API web (Implantar › Nova implantação › App da Web). Todas as chamadas são POST com JSON:
  *   { "acao": "...", "token": "...", ...dados }
- * O token identifica o aparelho/pessoa e o perfil: leitor (só registra leituras),
+ * O token identifica o aparelho/pessoa e o perfil: leitor (só registra leituras), sistema (computador
+ * de setor: só os dados do SimulFlow, ver Dados.gs),
  * planejamento (vê planilha e histórico, cadastra colaboradores) ou admin (tudo, inclusive
  * fechar o turno e gerenciar acessos). Os tokens ficam na aba "Acessos" só como hash SHA-256.
  */
@@ -9,7 +10,7 @@ var VERSAO_API = '1.0.0';
 
 var ACOES = {
   'status': {
-    perfis: ['leitor', 'planejamento', 'admin'],
+    perfis: ['leitor', 'sistema', 'planejamento', 'admin'],
     executar: function (repo, agora, corpo, acesso) {
       var hoje = repo.turno(partesSP(agora).data);
       var r = {
@@ -17,7 +18,7 @@ var ACOES = {
         turno: { inicio: CONFIG.TURNO_INICIO, fim: CONFIG.TURNO_FIM, fuso: CONFIG.FUSO },
         hoje: { data: hoje.data, aberto: !hoje.fechadoEm, fechadoEm: hoje.fechadoEm },
       };
-      if (acesso.perfil !== 'leitor') r.planilhaUrl = repo.planilha.getUrl();
+      if (acesso.perfil === 'planejamento' || acesso.perfil === 'admin') r.planilhaUrl = repo.planilha.getUrl();
       return r;
     },
   },
@@ -110,11 +111,11 @@ function doPost(e) {
 function executar(corpo) {
   var repo = criarRepo();
   var acesso = autenticar(repo, corpo.token);
-  var acao = ACOES[corpo.acao];
+  var acao = ACOES[corpo.acao] || ACOES_DADOS[corpo.acao] || ACOES_RESUMO[corpo.acao];
   if (!acao) throw ErroPresenca('Ação desconhecida: ' + corpo.acao, 404);
   if (acao.perfis.indexOf(acesso.perfil) < 0) throw ErroPresenca('O acesso "' + acesso.nome + '" (' + acesso.perfil + ') não permite esta ação', 403);
   var agora = agoraAtual();
-  garantirTurnos(repo, agora);
+  if (!acao.semTurnos) garantirTurnos(repo, agora);
   var r = acao.executar(repo, agora, corpo, acesso);
   r.ok = true;
   return r;
@@ -157,7 +158,7 @@ function autenticar(repo, token) {
 function criarAcesso(repo, nome, perfil, agora) {
   nome = String(nome || '').trim();
   if (!nome) throw ErroPresenca('Informe o nome do acesso (ex.: Celular do Planejamento)');
-  if (CONFIG.PERFIS.indexOf(perfil) < 0) throw ErroPresenca('Perfil inválido: use leitor, planejamento ou admin');
+  if (CONFIG.PERFIS.indexOf(perfil) < 0) throw ErroPresenca('Perfil inválido: use leitor, sistema, planejamento ou admin');
   var token = 'sf_' + Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   repo.adicionarAcesso({ nome: nome, perfil: perfil, hash: sha256Hex(token), criadoEm: new Date(agora || agoraAtual()).toISOString() });
   return { nome: nome, perfil: perfil, token: token };

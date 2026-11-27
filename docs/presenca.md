@@ -41,15 +41,24 @@ O arquivo `.nojekyll` na raiz faz o GitHub publicar os arquivos como estão.
 
 1. Em <https://sheets.google.com>, crie uma planilha em branco (ex.: "SimulFlow — Presença").
 2. Abra **Extensões › Apps Script**.
-3. Crie um arquivo de script para cada `.gs` da pasta `apps-script/` (`Config`, `Dominio`, `Planilha`,
-   `Api`, `Menu`) e cole o conteúdo de cada um.
+3. Cole o código. Há duas formas:
+   - um arquivo só, com o `Codigo.gs` combinado (todos os `.gs` juntos), colado no `Código.gs`;
+   - ou um arquivo de script para cada `.gs` da pasta `apps-script/` (`Config`, `Dominio`,
+     `Planilha`, `Dados`, `Resumo`, `Api`, `Menu`).
 4. Em **Configurações do projeto** (engrenagem), marque *Mostrar o arquivo de manifesto
    "appsscript.json"* e cole o conteúdo de `apps-script/appsscript.json`. Ele define o fuso
-   America/Sao_Paulo e o runtime V8.
+   America/Sao_Paulo e o runtime V8. Esse passo é opcional: o código já usa o fuso de São Paulo.
+   Se colar o JSON num arquivo `.gs` por engano, o editor acusa erro de sintaxe; nesse caso, apague o arquivo.
 5. Salve e recarregue a planilha. Aparece o menu **SimulFlow**.
 6. **SimulFlow › 1. Preparar planilha**. Na primeira vez o Google pede autorização: aceite com a
-   conta dona da planilha. Isso cria as abas Hoje, Colaboradores, Registros, Turnos, Histórico
-   detalhado e Acessos. As abas de registros ficam protegidas.
+   conta dona da planilha. Se aparecer "O Google não verificou este app", clique em **Avançado ›
+   Acessar (não seguro)**. Isso cria as abas abaixo e protege as de registros:
+   - Hoje, Colaboradores, Registros, Turnos, Histórico detalhado e Acessos;
+   - **Dados**, onde ficam os dados do SimulFlow quando os computadores estão conectados;
+   - **Config**, com os e-mails do resumo.
+
+   Se o menu não aparecer ou der "erro desconhecido", abra o Apps Script, escolha a função
+   `instalarGatilho` e clique em **Executar** (de preferência numa janela anônima, com uma conta Google só).
 7. **SimulFlow › 2. Ativar fechamento automático (16:40)**. Instala um gatilho que roda a cada 5
    minutos e faz três coisas:
    - fecha a planilha do dia às 16:40, mesmo com tudo desligado;
@@ -71,7 +80,14 @@ Na planilha: **SimulFlow › 3. Gerar token de acesso…** O token aparece uma �
 
 - Crie primeiro um token **admin** para você.
 - Os demais podem ser criados pelo SimulFlow (aba Presença › Conexão › Novo acesso), já logado
-  como admin.
+  como admin. Perfis:
+
+  | Perfil | Para quê |
+  |---|---|
+  | **leitor** | Celular da leitura: só registra presenças |
+  | **sistema** | Computador de um setor: dados do SimulFlow (OPs, FAs…), sem a Presença |
+  | **planejamento** | Presença completa e dados do SimulFlow |
+  | **admin** | Tudo, mais fechar o turno, gerenciar acessos, e-mails do resumo e substituir os dados |
 
 ## 5. Conectar o PC do Planejamento
 
@@ -83,6 +99,35 @@ Na planilha: **SimulFlow › 3. Gerar token de acesso…** O token aparece uma �
    - presentes por função;
    - quem ainda não passou o cartão;
    - leituras após o fechamento.
+
+## 5.1 E-mail diário com o resumo
+
+1. Em **Presença › Conexão** (acesso admin), informe os **E-mails do resumo diário**, separados por
+   vírgula, e clique em **Salvar e-mails**.
+2. Clique em **Enviar e-mail de teste**.
+3. Na primeira vez, o Google pede autorização para enviar e-mails:
+   - no Apps Script, escolha a função `instalarGatilho`, clique em **Executar** e aceite;
+   - depois publique uma nova versão em **Implantar › Gerenciar implantações › ✏️ › Nova versão**.
+
+O resumo sai a cada fechamento (automático às 16:40, tardio ou manual), uma vez por dia. Ele traz:
+- presentes sobre ativos;
+- quantos chegaram fora do turno;
+- presentes por função;
+- a lista de quem não passou o cartão;
+- o link da planilha.
+
+O envio fica registrado na coluna "E-mail enviado" da aba **Turnos**. Uma falha no envio nunca
+impede o fechamento. Uma conta Gmail comum envia até 100 e-mails por dia.
+
+## 5.2 Relatório mensal
+
+Em **Presença › Relatório**, escolha o mês. Para cada colaborador aparecem:
+- presenças, faltas e chegadas fora do turno;
+- leituras após o fechamento;
+- **% de presença**, que é presenças divididas pelos dias fechados em que a pessoa estava ativa.
+
+Só entram dias já fechados. A tabela ordena clicando no cabeçalho, e o relatório pode ser
+exportado em CSV ou XLSX (com as abas Colaboradores e Dias).
 
 ## 6. Configurar o celular (Chrome no Android)
 
@@ -192,6 +237,12 @@ node tools/simulflow.js servir
 Abra http://localhost:8080 › Presença › Conexão. Use a URL `http://localhost:8790/` e um dos tokens
 que o emulador mostra. Para simular outro horário:
 `node tools/simulflow.js emular-planilha --relogio=2026-11-26T16:35:00-03:00`.
+
+## Atualizar o código da planilha
+
+Sempre que o `Codigo.gs` mudar:
+1. Apague todo o `Código.gs` (**Ctrl+A** e depois **Delete**), cole o novo e salve.
+2. Publique em **Implantar › Gerenciar implantações › ✏️ › Versão: Nova versão › Implantar**. A URL continua a mesma.
 
 ## Limitações
 

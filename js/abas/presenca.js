@@ -7,12 +7,13 @@ import { combinaTexto } from '../core/util.js';
 import { baixar } from '../core/exportar.js';
 import { gerarXlsx, TIPO_XLSX } from '../core/xlsx.js';
 import { controleEstado } from '../componentes/comuns.js';
-import { conexao, salvarConexao, limparConexao, chamar, testarConexao, podePlanejar, ehAdminPlanilha, linkCelular } from '../presenca/conexao.js';
+import { conexao, salvarConexao, limparConexao, chamar, testarConexao, podePlanejar, ehAdminPlanilha, linkCelular, modoDados, definirModoDados } from '../presenca/conexao.js';
 import { montarLeitor, lerUmaTag, suporteNfc, dadosDoTexto } from '../presenca/leitor.js';
 import { colaboradoresDoCSV, gerarCSV, MODELO_CSV } from '../presenca/csv.js';
 
-const estado = { plan: { busca: '', campo: 'hora', dir: 'asc' }, col: { busca: '', ativos: '' }, hist: { busca: '' } };
-const dados = { hoje: null, colaboradores: null, historico: null, dias: {}, acessos: null };
+const mesAtual = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 7);
+const estado = { plan: { busca: '', campo: 'hora', dir: 'asc' }, col: { busca: '', ativos: '' }, hist: { busca: '' }, rel: { mes: mesAtual(), busca: '', campo: 'nome', dir: 'asc' } };
+const dados = { hoje: null, colaboradores: null, historico: null, dias: {}, acessos: null, relatorios: {}, emails: null };
 const carga = { andamento: new Set(), erro: {}, em: {} };
 let ctxAtual = null, secaoAtual = '', timer = null, desligar = null;
 let hostLeitor = null, leitor = null, chaveLeitor = '';
@@ -47,6 +48,8 @@ const recarregarColaboradores = () => carregar('colaboradores', 'colaboradores.l
 const recarregarHistorico = () => carregar('historico', 'historico.listar', {}, r => { dados.historico = r.historico; });
 const recarregarDia = data => carregar('dia:' + data, 'historico.dia', { data }, r => { dados.dias[data] = r.planilha; });
 const recarregarAcessos = () => carregar('acessos', 'acessos.listar', {}, r => { dados.acessos = r.acessos; });
+const recarregarRelatorio = mes => carregar('rel:' + mes, 'relatorio.mes', { mes }, r => { dados.relatorios[mes] = r.relatorio; });
+const recarregarEmails = () => carregar('emails', 'config.ler', {}, r => { dados.emails = r.emailsResumo; });
 
 /** Dispara a carga uma vez (sem repetir em caso de erro; o botão Atualizar tenta de novo). */
 function garantir(chave, fn, valor) {
@@ -54,7 +57,7 @@ function garantir(chave, fn, valor) {
 }
 
 function limparCache() {
-  Object.assign(dados, { hoje: null, colaboradores: null, historico: null, dias: {}, acessos: null });
+  Object.assign(dados, { hoje: null, colaboradores: null, historico: null, dias: {}, acessos: null, relatorios: {}, emails: null });
   carga.erro = {};
 }
 
@@ -68,6 +71,11 @@ function semConexao() {
 }
 
 function soPlanejamento(con) {
+  if (con.perfil === 'sistema') {
+    return html`${cabecalho('Presença operacional', '')}<div class="panel"><h2>Computador de setor</h2>
+      <p class="muted" style="margin:8px 0 14px">Este computador está conectado como <strong>${con.nome}</strong> (perfil sistema): ele usa os dados do SimulFlow, sem acesso à Presença. Para ver a planilha do dia aqui, conecte com um acesso Planejamento ou Admin.</p>
+      <a class="btn outline" href="#/presenca/conexao">${ic('link')}<span>Conexão</span></a></div>`;
+  }
   return html`${cabecalho('Presença operacional', '')}<div class="panel"><h2>Acesso de leitor</h2>
     <p class="muted" style="margin:8px 0 14px">Este aparelho está conectado como <strong>${con.nome}</strong> (perfil leitor): ele só registra leituras. A planilha do dia, o cadastro e o histórico são do Planejamento.</p>
     <a class="btn primario" href="#/presenca/leitura">${ic('nfc')}<span>Ir para a leitura</span></a></div>`;
@@ -210,10 +218,67 @@ function viewHistorico(ctx, data) {
     </tbody></table></div>${dados.historico && !lista.length ? vazio('Nenhuma planilha fechada ainda.') : ''}</div>`;
 }
 
+// ---------------- relatório mensal ----------------
+
+const nomeMes = m => new Date(m + '-15T12:00:00Z').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+function linhasRelatorio(rel) {
+  const r = estado.rel;
+  const lista = rel.colaboradores.filter(c => combinaTexto(r.busca, [c.nome, c.matricula, c.funcao]));
+  const num = ['presentes', 'faltas', 'foraTurno', 'aposFechamento', 'percentual'].includes(r.campo);
+  return lista.sort((a, b) => (num ? a[r.campo] - b[r.campo] : String(a[r.campo]).localeCompare(String(b[r.campo]), 'pt-BR', { numeric: true })) * (r.dir === 'asc' ? 1 : -1));
+}
+
+function thRel(campoTab, rotulo) {
+  const { campo, dir } = estado.rel;
+  const seta = campo === campoTab ? (dir === 'asc' ? ' ▲' : ' ▼') : '';
+  return html`<th><button type="button" class="th-ordem" data-acao="ordenar-rel" data-campo="${campoTab}" aria-label="Ordenar por ${rotulo}">${rotulo}${seta}</button></th>`;
+}
+
+function viewRelatorio(ctx) {
+  if (!/^\d{4}-\d{2}$/.test(estado.rel.mes || '')) estado.rel.mes = mesAtual();
+  const mes = estado.rel.mes;
+  garantir('rel:' + mes, () => recarregarRelatorio(mes), dados.relatorios[mes]);
+  const rel = dados.relatorios[mes];
+  const acoes = html`<label class="field" style="min-width:0"><input type="month" data-k="rel.mes" value="${mes}" max="${mesAtual()}" aria-label="Mês do relatório"></label>
+    ${botao('CSV', { acao: 'exportar-rel', dados: { formato: 'csv' }, v: 'outline', icone: 'download', desab: !rel })}
+    ${botao('XLSX', { acao: 'exportar-rel', dados: { formato: 'xlsx' }, v: 'outline', icone: 'sheet', desab: !rel })}`;
+  const cab = cabecalho(`Relatório de ${nomeMes(mes)}`, '', acoes);
+  if (!rel) return html`${cab}${erroCarga('rel:' + mes, 'Não foi possível montar o relatório', 'atualizar-rel')}${carga.erro['rel:' + mes] ? '' : html`<div class="panel"><p class="muted">Montando o relatório…</p></div>`}`;
+  const linhas = linhasRelatorio(rel);
+  const faltas = rel.colaboradores.reduce((s, c) => s + c.faltas, 0);
+  return html`${cab}
+    <div class="stats">${stat({ rotulo: 'Dias fechados', valor: rel.totais.diasFechados, icone: 'clipboard', rodape: 'Planilhas do mês já fechadas' })}
+      ${stat({ rotulo: 'Média de presentes', valor: String(rel.totais.mediaPresentes).replace('.', ','), icone: 'users', cor: 'green', rodape: 'Por dia fechado' })}
+      ${stat({ rotulo: 'Faltas no mês', valor: faltas, icone: 'clock', cor: 'amber', rodape: 'Soma de todos os colaboradores' })}
+      ${stat({ rotulo: 'Chegadas fora do turno', valor: rel.colaboradores.reduce((s, c) => s + c.foraTurno, 0), icone: 'alert', cor: 'neutral', rodape: 'Antes das ' + (dados.hoje?.turno?.inicio || '07:30') })}</div>
+    <div class="filters">${busca('rel.busca', estado.rel.busca, 'Buscar nome, matrícula ou função...')}<span class="filter-count">${linhas.length} colaborador(es)</span></div>
+    <div class="table-wrap"><div class="table-scroll"><table><thead><tr>${thRel('nome', 'Nome')}${thRel('matricula', 'Matrícula')}${thRel('funcao', 'Função')}${thRel('presentes', 'Presenças')}${thRel('faltas', 'Faltas')}${thRel('foraTurno', 'Fora do turno')}${thRel('aposFechamento', 'Após o fechamento')}${thRel('percentual', '% presença')}</tr></thead><tbody>
+      ${linhas.map(c => html`<tr><td><strong>${c.nome}</strong></td><td>${c.matricula}</td><td>${c.funcao}</td><td>${c.presentes}</td><td>${c.faltas ? html`<span class="amber">${c.faltas}</span>` : 0}</td><td>${c.foraTurno}</td><td>${c.aposFechamento}</td>
+        <td><strong>${String(c.percentual).replace('.', ',')}%</strong></td></tr>`)}
+    </tbody></table></div>${linhas.length ? '' : vazio(rel.colaboradores.length ? 'Nenhum colaborador para a busca.' : 'Nenhum dia fechado neste mês.')}</div>
+    ${rel.dias.length ? html`<section class="section"><h2 style="margin-bottom:10px">Dias do mês</h2><div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Data</th><th>Presentes</th><th>Ativos</th><th>Fechamento</th></tr></thead><tbody>
+      ${rel.dias.map(d => html`<tr><td><a class="code" href="#/presenca/historico/${d.data}">${dataBR(d.data)}</a></td><td><strong>${d.presentes}</strong></td><td>${d.ativos}</td><td>${TIPOS_FECHAMENTO[d.tipoFechamento] || d.tipoFechamento}</td></tr>`)}</tbody></table></div></div></section>` : ''}`;
+}
+
+function exportarRelatorio(formato) {
+  const rel = dados.relatorios[estado.rel.mes];
+  if (!rel) return;
+  const cab = ['Nome', 'Matrícula', 'Função', 'Presenças', 'Faltas', 'Fora do turno', 'Após o fechamento', 'Dias ativos', '% presença'];
+  const linhas = linhasRelatorio(rel).map(c => [c.nome, c.matricula, c.funcao, c.presentes, c.faltas, c.foraTurno, c.aposFechamento, c.diasAtivos, c.percentual]);
+  const nome = `presenca_${rel.mes}`;
+  if (formato === 'csv') { baixar(nome + '.csv', gerarCSV([cab, ...linhas.map(l => l.map(v => typeof v === 'number' ? String(v).replace('.', ',') : v))]), 'text/csv;charset=utf-8'); return; }
+  const dias = [['Data', 'Presentes', 'Ativos', 'Fechamento'], ...rel.dias.map(d => [dataBR(d.data), d.presentes, d.ativos, TIPOS_FECHAMENTO[d.tipoFechamento] || d.tipoFechamento])];
+  baixar(nome + '.xlsx', new Blob([gerarXlsx([
+    { nome: 'Colaboradores', linhas: [cab, ...linhas], larguras: [30, 14, 22, 12, 10, 14, 18, 12, 12] },
+    { nome: 'Dias', linhas: dias, larguras: [14, 12, 10, 22] },
+  ])], { type: TIPO_XLSX }), TIPO_XLSX);
+}
+
 function viewConexao(ctx) {
   const con = conexao();
   const admin = ehAdminPlanilha(con);
-  if (admin) garantir('acessos', recarregarAcessos, dados.acessos);
+  if (admin) { garantir('acessos', recarregarAcessos, dados.acessos); garantir('emails', recarregarEmails, dados.emails); }
   return html`${cabecalho('Conexão com a planilha', '')}
     ${con ? html`<div class="panel" style="margin-bottom:16px"><div class="title-row"><h2>Conectado como ${con.nome}</h2>${badge(con.perfil, con.perfil === 'admin' ? 'blue' : con.perfil === 'leitor' ? 'neutral' : 'green')}</div>
       <p class="muted small" style="margin:6px 0 12px;word-break:break-all">${con.url}</p>
@@ -223,12 +288,17 @@ function viewConexao(ctx) {
         ${campo('Token de acesso', html`<input name="token" required autocomplete="off" placeholder="sf_…">`, { obrig: true, full: true, ajuda: 'Gerado na planilha (menu SimulFlow › Gerar token de acesso) ou por um admin aqui embaixo.' })}</div>
       <div class="toolbar" style="margin-top:12px">${botao('Testar e salvar', { acao: 'conectar', icone: 'link' })}</div>
       <p class="muted small" style="margin-top:10px">Passo a passo de criação da planilha e do script: <code>docs/presenca.md</code>.</p></form>
+    ${admin ? html`<form class="panel section" data-form-emails><h2>E-mails do resumo diário</h2>
+      <p class="muted small" style="margin:6px 0 10px">Ao fechar o dia (16:40, tardio ou manual), a planilha envia para estes e-mails: presentes, presentes por função e quem não passou o cartão.</p>
+      ${erroCarga('emails', 'Não foi possível ler os e-mails', 'atualizar-emails')}
+      ${campo('E-mails (separados por vírgula)', html`<input name="emails" placeholder="pcp@empresa.com, gerente@empresa.com" value="${dados.emails ?? ''}">`, { full: true })}
+      <div class="toolbar" style="margin-top:10px">${botao('Salvar e-mails', { acao: 'salvar-emails', icone: 'check' })}${botao('Enviar e-mail de teste', { acao: 'testar-email', v: 'outline', icone: 'bell' })}</div></form>` : ''}
     ${admin ? html`<section class="section"><div class="section-title"><h2>Acessos à planilha</h2>${botao('Novo acesso', { acao: 'acesso-novo', icone: 'plus' })}</div>
       ${erroCarga('acessos', 'Não foi possível listar os acessos', 'atualizar-acessos')}
       <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nome</th><th>Perfil</th><th>Criado em</th><th>Último uso</th><th>Situação</th><th></th></tr></thead><tbody>
       ${(dados.acessos || []).map(a => html`<tr><td><strong>${a.nome}</strong></td><td>${a.perfil}</td><td>${dataHora(a.criadoEm)}</td><td>${a.ultimoUso ? dataHora(a.ultimoUso) : '—'}</td><td>${badge(a.ativo ? 'Ativo' : 'Desativado')}</td>
         <td>${a.ativo ? botao('Revogar', { acao: 'acesso-revogar', dados: { id: a.id, nome: a.nome }, v: 'outline', tam: 'sm' }) : ''}</td></tr>`)}</tbody></table></div></div>
-      <p class="muted small" style="margin-top:8px">Perfis: <strong>leitor</strong> só registra leituras (celular); <strong>planejamento</strong> vê a planilha, o histórico e cadastra colaboradores; <strong>admin</strong> também fecha o turno e gerencia acessos.</p></section>` : ''}`;
+      <p class="muted small" style="margin-top:8px">Perfis: <strong>leitor</strong> só registra leituras (celular); <strong>sistema</strong> é o computador de um setor (dados do SimulFlow, sem presença); <strong>planejamento</strong> vê a planilha, o histórico e cadastra colaboradores; <strong>admin</strong> também fecha o turno e gerencia acessos.</p></section>` : ''}`;
 }
 
 // ---------------- ações ----------------
@@ -318,6 +388,8 @@ function mostrarToken(acesso) {
     ${campo('Token', html`<input readonly value="${acesso.token}" data-copiar>`)}
     ${link ? html`${campo('Link para o celular (abre a tela de leitura já configurada)', html`<input readonly value="${link}" data-copiar>`)}
       <p class="muted small">Envie o link para o celular do Planejamento e abra no Chrome. O token vai no final do link (#) e é guardado só no aparelho.</p>` : ''}
+    ${acesso.perfil !== 'leitor' ? html`${campo('URL do app da Web', html`<input readonly value="${con.url}" data-copiar>`)}
+      <p class="muted small">No computador ${acesso.perfil === 'sistema' ? 'do setor' : ''}, abra o SimulFlow e, na tela "Configurar este computador", cole a URL e o token.</p>` : ''}
     <p class="muted small">Toque num campo para selecionar e copiar.</p>`, false);
   document.querySelectorAll('[data-copiar]').forEach(i => i.addEventListener('focus', () => { i.select(); navigator.clipboard?.writeText(i.value).then(() => toast('Copiado'), () => {}); }));
 }
@@ -332,6 +404,17 @@ export default {
       mudanca: ctl.mudanca,
       cliques: {
         ...ctl.cliques,
+        'ordenar-rel': d => { const r = estado.rel; r.dir = r.campo === d.campo && r.dir === 'asc' ? 'desc' : 'asc'; r.campo = d.campo; ctx.rerender(); },
+        'exportar-rel': d => exportarRelatorio(d.formato),
+        'atualizar-rel': () => { delete carga.erro['rel:' + estado.rel.mes]; recarregarRelatorio(estado.rel.mes); },
+        'atualizar-emails': () => { delete carga.erro.emails; recarregarEmails(); },
+        'salvar-emails': async () => {
+          const r = await chamar('config.salvar', { emailsResumo: el.querySelector('[data-form-emails] [name=emails]').value });
+          dados.emails = r.emailsResumo;
+          toast(r.emailsResumo ? 'E-mails do resumo salvos' : 'Resumo diário desligado (sem e-mails)');
+          ctx.rerender();
+        },
+        'testar-email': async () => { const r = await chamar('resumo.teste', {}); toast('E-mail de teste enviado para ' + r.enviadoPara); },
         ordenar: d => { const p = estado.plan; p.dir = p.campo === d.campo && p.dir === 'asc' ? 'desc' : 'asc'; p.campo = d.campo; ctx.rerender(); },
         'atualizar-hoje': () => { carga.erro.hoje = ''; recarregarHoje(); },
         'atualizar-colaboradores': () => { carga.erro.colaboradores = ''; recarregarColaboradores(); },
@@ -357,6 +440,12 @@ export default {
         conectar: async () => {
           const form = el.querySelector('[data-form-conexao]');
           const c = await testarConexao(form.url.value, form.token.value);
+          if (modoDados() === 'planilha') {
+            if (!(await confirmar('Trocar a conexão deste computador?', 'Os dados do SimulFlow deste computador também usam esta conexão. O sistema será recarregado com o novo acesso.', 'Trocar e recarregar'))) return;
+            salvarConexao(c);
+            location.reload();
+            return;
+          }
           salvarConexao(c);
           limparCache();
           desmontarLeitor();
@@ -365,13 +454,18 @@ export default {
         },
         'testar-conexao': async () => { const c = conexao(); const n = await testarConexao(c.url, c.token); salvarConexao(n); toast(`Conexão OK: ${n.nome} (${n.perfil})`); ctx.rerender(); },
         desconectar: async () => {
+          if (modoDados() === 'planilha') {
+            if (!(await confirmar('Desconectar este computador da planilha?', 'Ele deixa de usar a planilha para os dados do SimulFlow e para a Presença. Os dados continuam na planilha para os outros computadores. Na próxima abertura, aparece a tela "Configurar este computador".', 'Desconectar'))) return;
+            limparConexao(); definirModoDados(null); location.reload();
+            return;
+          }
           if (!(await confirmar('Desconectar este aparelho?', 'O token será apagado deste navegador. Ele continua válido na planilha até ser revogado.'))) return;
           limparConexao(); limparCache(); desmontarLeitor(); ctx.rerender();
         },
         'acesso-novo': () => modal({
           titulo: 'Novo acesso', descricao: 'Cada aparelho ou pessoa recebe seu próprio token.',
           corpo: html`${campo('Nome', html`<input name="nome" required placeholder="Celular do Planejamento">`, { obrig: true })}
-            ${campo('Perfil', seletor('perfil', [{ v: 'leitor', t: 'Leitor — só registra leituras (celular)' }, { v: 'planejamento', t: 'Planejamento — planilha, histórico e cadastro' }, { v: 'admin', t: 'Admin — tudo, inclusive fechar o turno' }], 'leitor'))}`,
+            ${campo('Perfil', seletor('perfil', [{ v: 'leitor', t: 'Leitor — só registra leituras (celular)' }, { v: 'sistema', t: 'Sistema — computador de setor (dados do SimulFlow, sem presença)' }, { v: 'planejamento', t: 'Planejamento — planilha, histórico e cadastro' }, { v: 'admin', t: 'Admin — tudo, inclusive fechar o turno' }], 'leitor'))}`,
           rotuloOk: 'Criar acesso',
           onOk: async v => { const r = await chamar('acessos.criar', { nome: v.nome, perfil: v.perfil }); recarregarAcessos(); setTimeout(() => mostrarToken(r.acesso), 50); },
         }),
@@ -402,13 +496,15 @@ export default {
     let corpo;
     if (secao === 'conexao') corpo = viewConexao(ctx);
     else if (!con) corpo = semConexao();
+    else if (con.perfil === 'sistema') corpo = soPlanejamento(con);
     else if (secao === 'leitura') corpo = viewLeitura(ctx);
     else if (!podePlanejar(con)) corpo = soPlanejamento(con);
     else if (secao === 'colaboradores') corpo = viewColaboradores(ctx);
     else if (secao === 'historico') corpo = viewHistorico(ctx, param);
+    else if (secao === 'relatorio') corpo = viewRelatorio(ctx);
     else corpo = viewPlanilha(ctx);
     if (secao !== 'leitura') desmontarLeitor();
-    el.innerHTML = String(html`<main class="page">${subabas([['planilha', 'Planilha do dia', 'clipboard'], ['leitura', 'Leitura', 'nfc'], ['colaboradores', 'Colaboradores', 'users'], ['historico', 'Histórico', 'history'], ['conexao', 'Conexão', 'link']], secao, 'presenca')}${corpo}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['planilha', 'Planilha do dia', 'clipboard'], ['leitura', 'Leitura', 'nfc'], ['colaboradores', 'Colaboradores', 'users'], ['historico', 'Histórico', 'history'], ['relatorio', 'Relatório', 'chart'], ['conexao', 'Conexão', 'link']], secao, 'presenca')}${corpo}</main>`);
     if (secao === 'leitura' && con) anexarLeitor(el);
   },
 };

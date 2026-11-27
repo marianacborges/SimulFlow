@@ -7,12 +7,14 @@
 var CABECALHOS = {};
 CABECALHOS[CONFIG.ABAS.COLABORADORES] = ['Nome', 'Matrícula', 'Função', 'Código da tag NFC', 'Ativo', 'Atualizado em'];
 CABECALHOS[CONFIG.ABAS.REGISTROS] = ['Data', 'Hora', 'Matrícula', 'Nome', 'Função', 'Fora do turno', 'Situação', 'Origem', 'Dispositivo', 'Registrado em', 'Tipo'];
-CABECALHOS[CONFIG.ABAS.TURNOS] = ['Data', 'Aberto em', 'Fechado em', 'Tipo de fechamento', 'Fechado por', 'Total presentes', 'Total ativos'];
+CABECALHOS[CONFIG.ABAS.TURNOS] = ['Data', 'Aberto em', 'Fechado em', 'Tipo de fechamento', 'Fechado por', 'Total presentes', 'Total ativos', 'E-mail enviado'];
 CABECALHOS[CONFIG.ABAS.HISTORICO] = ['Data', 'Situação', 'Nome', 'Matrícula', 'Função', 'Data/Hora', 'Fora do turno'];
 CABECALHOS[CONFIG.ABAS.ACESSOS] = ['Nome', 'Perfil', 'Hash do token', 'Criado em', 'Ativo', 'Último uso'];
+CABECALHOS[CONFIG.ABAS.DADOS] = ['Coleção', 'ID', 'JSON', 'Versão', 'Atualizado em', 'Por'];
+CABECALHOS[CONFIG.ABAS.CONFIG] = ['Chave', 'Valor'];
 
 // Abas que só o script (dono da planilha) altera.
-var ABAS_PROTEGIDAS = [CONFIG.ABAS.REGISTROS, CONFIG.ABAS.TURNOS, CONFIG.ABAS.HISTORICO, CONFIG.ABAS.ACESSOS];
+var ABAS_PROTEGIDAS = [CONFIG.ABAS.REGISTROS, CONFIG.ABAS.TURNOS, CONFIG.ABAS.HISTORICO, CONFIG.ABAS.ACESSOS, CONFIG.ABAS.DADOS, CONFIG.ABAS.CONFIG];
 
 function planilhaAtiva() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -136,7 +138,7 @@ function criarRepo(ss) {
   function turnos() {
     if (!cache.turnos) {
       cache.turnos = lerTodas(aba(CONFIG.ABAS.TURNOS), nCol(CONFIG.ABAS.TURNOS)).filter(function (x) { return texto(x.v[0]); }).map(function (x) {
-        return { linha: x.linha, data: texto(x.v[0]), abertoEm: texto(x.v[1]), fechadoEm: texto(x.v[2]), tipo: texto(x.v[3]), por: texto(x.v[4]), totalPresentes: Number(x.v[5]) || 0, totalAtivos: Number(x.v[6]) || 0 };
+        return { linha: x.linha, data: texto(x.v[0]), abertoEm: texto(x.v[1]), fechadoEm: texto(x.v[2]), tipo: texto(x.v[3]), por: texto(x.v[4]), totalPresentes: Number(x.v[5]) || 0, totalAtivos: Number(x.v[6]) || 0, emailEnviado: texto(x.v[7]) };
       });
     }
     return cache.turnos;
@@ -168,6 +170,23 @@ function criarRepo(ss) {
       if (!t || t.fechadoEm) throw ErroPresenca('Planilha fechada não pode ser editada', 409);
       gravarLinha(aba(CONFIG.ABAS.TURNOS), t.linha, [data, t.abertoEm, f.fechadoEm, f.tipo, f.por, f.totalPresentes, f.totalAtivos]);
       cache.turnos = null;
+    },
+    marcarEmailTurno: function (data, textoEnvio) {
+      var t = turnos().filter(function (x) { return x.data === data; })[0];
+      if (!t) return;
+      var r = aba(CONFIG.ABAS.TURNOS).getRange(t.linha, 8);
+      r.setNumberFormat('@');
+      r.setValues([[textoEnvio]]);
+      cache.turnos = null;
+    },
+    historicoDoMes: function (mes) {
+      return lerTodas(aba(CONFIG.ABAS.HISTORICO), nCol(CONFIG.ABAS.HISTORICO)).filter(function (x) { return texto(x.v[0]).indexOf(mes) === 0; }).map(function (x) {
+        var v = x.v;
+        return { data: texto(v[0]), situacao: texto(v[1]), nome: texto(v[2]), matricula: texto(v[3]), funcao: texto(v[4]), dataHora: texto(v[5]), foraTurno: ehSim(v[6]) };
+      });
+    },
+    registrosDoMes: function (mes) {
+      return lerTodas(aba(CONFIG.ABAS.REGISTROS), nCol(CONFIG.ABAS.REGISTROS)).filter(function (x) { return texto(x.v[0]).indexOf(mes) === 0; }).map(lerRegistro);
     },
     registrosDoDia: function (data) {
       cache.registros = cache.registros || {};

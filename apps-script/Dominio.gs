@@ -83,7 +83,10 @@ function fecharDia(repo, data, tipo, por, agora) {
   }));
   repo.gravarHistorico(linhas);
   repo.fecharTurno(data, { fechadoEm: new Date(agora).toISOString(), tipo: tipo, por: por || '', totalPresentes: registros.length, totalAtivos: ativos.length });
-  return { data: data, tipo: tipo, totalPresentes: registros.length };
+  // Resumo por e-mail (Resumo.gs). Uma falha no envio nunca impede o fechamento.
+  var email = '';
+  try { email = typeof enviarResumoDia === 'function' ? enviarResumoDia(repo, data) : ''; } catch (e) { email = 'falhou: ' + e.message; Logger.log('Resumo por e-mail não enviado: ' + e.message); }
+  return { data: data, tipo: tipo, totalPresentes: registros.length, email: email };
 }
 
 function buscarColaborador(repo, codigo, origem) {

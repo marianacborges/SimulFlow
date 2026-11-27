@@ -32,7 +32,7 @@ function menuGerarToken() {
   var ui = SpreadsheetApp.getUi();
   var nome = ui.prompt('Novo acesso', 'Nome do aparelho ou pessoa (ex.: Celular do Planejamento):', ui.ButtonSet.OK_CANCEL);
   if (nome.getSelectedButton() !== ui.Button.OK) return;
-  var perfil = ui.prompt('Perfil', 'Digite: leitor (só registra leituras), planejamento ou admin', ui.ButtonSet.OK_CANCEL);
+  var perfil = ui.prompt('Perfil', 'Digite: leitor (celular de leitura), sistema (computador de setor), planejamento ou admin', ui.ButtonSet.OK_CANCEL);
   if (perfil.getSelectedButton() !== ui.Button.OK) return;
   var r = comTrava(function () { return criarAcesso(criarRepo(), nome.getResponseText(), perfil.getResponseText().trim().toLowerCase()); });
   ui.alert('Token criado para "' + r.nome + '" (' + r.perfil + ')',

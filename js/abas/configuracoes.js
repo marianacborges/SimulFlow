@@ -7,6 +7,7 @@ import { dataHora } from '../core/util.js';
 import { abrirHistorico, opcoesUsuarios, nomeUsuario } from '../componentes/comuns.js';
 import { STATUS_ENSAIO_ABERTO } from '../data/regras.js';
 import { baixarJSON, escolherJSON } from '../core/exportar.js';
+import { conexao, definirModoDados } from '../core/conexao.js';
 
 let obraSel = '';
 let desligar = null;
@@ -76,13 +77,25 @@ const SECOES = [
   },
   {
     id: 'dados', titulo: 'Dados e backup', icone: 'download', descricao: 'Exportar e importar o JSON completo e limpar dados.',
-    resumo: ({ store }) => `Armazenamento: ${store.adaptador.nome}`,
-    view: ({ store }) => html`<h2>Dados e backup</h2><div class="panel" style="margin-top:10px;display:flex;flex-direction:column;gap:12px">
-      <p class="muted">Os dados ficam no armazenamento local deste navegador (${store.adaptador.nome}). Exporte um JSON completo para backup ou para levar a outro computador. O arquivo inclui os usuários com as senhas em hash.</p>
+    resumo: ({ store }) => store.adaptador.nome === 'planilha' ? 'Na planilha Google (compartilhados)' : 'Só neste navegador',
+    view: ({ store }) => {
+      const planilha = store.adaptador.nome === 'planilha';
+      const con = conexao();
+      const sinc = store.adaptador.estadoSincronia?.();
+      return html`<h2>Onde ficam os dados</h2><div class="panel" style="margin:10px 0 18px;display:flex;flex-direction:column;gap:10px">
+      ${planilha ? html`<p><strong>Na planilha Google</strong>, compartilhados entre todos os computadores conectados.</p>
+        <p class="muted small" style="word-break:break-all">Acesso deste computador: ${con?.nome || '—'} (${con?.perfil || '—'}) · ${con?.url || ''}</p>
+        <p class="muted small">Situação: ${{ ok: 'tudo salvo na planilha', sincronizando: `enviando ${sinc?.pendentes || ''} alteração(ões)`, offline: 'sem conexão — alterações guardadas neste computador', erro: sinc?.mensagem || 'erro' }[sinc?.situacao] || '—'}</p>
+        <div class="toolbar">${botao('Usar só neste navegador', { acao: 'modo-local', v: 'outline', icone: 'x' })}</div>`
+      : html`<p><strong>Só neste navegador.</strong> Outros computadores não veem estes dados.</p>
+        <div class="toolbar">${botao('Conectar à planilha Google', { acao: 'modo-planilha', icone: 'link' })}</div>`}</div>
+      <h2>Dados e backup</h2><div class="panel" style="margin-top:10px;display:flex;flex-direction:column;gap:12px">
+      <p class="muted">Exporte um JSON completo para backup ou para levar a outro computador. O arquivo inclui os usuários com as senhas em hash.${planilha ? ' Importar e Limpar dados alteram a planilha para todos os computadores (exige um acesso admin neste computador; sem ele, as mudanças são enviadas registro a registro).' : ''}</p>
       <div class="toolbar">${botao('Exportar JSON completo', { acao: 'exportar', icone: 'download' })}${botao('Importar JSON', { acao: 'importar', v: 'outline', icone: 'upload' })}
         ${botao('Carregar data/dados-iniciais.json', { acao: 'carregar-servidor', v: 'outline', icone: 'file' })}</div>
       <div class="toolbar">${botao('Limpar dados', { acao: 'vazio', v: 'perigo', icone: 'x' })}</div>
-      <p class="muted small">Limpar dados apaga obras, OPs, FAs, itens, materiais e notificações deste navegador; usuários e auditoria são mantidos.</p></div>`,
+      <p class="muted small">Limpar dados apaga obras, OPs, FAs, itens, materiais e notificações${planilha ? ' da planilha (para todos)' : ' deste navegador'}; usuários e auditoria são mantidos.</p></div>`;
+    },
   },
   {
     id: 'abas', titulo: 'Abas registradas', icone: 'menu', descricao: 'Abas do menu, ordem, módulo e quem pode acessar.',
@@ -139,7 +152,12 @@ export default {
           const pacote = await r.json();
           if (await confirmar('Carregar dados do arquivo do servidor?', 'Todos os dados atuais deste navegador serão substituídos.', 'Carregar')) { acoes.dados.importarBackup(pacote); toast('Dados carregados'); }
         },
-        vazio: async () => { if (await confirmar('Limpar dados?', 'Obras, OPs, FAs, itens, materiais e notificações serão apagados deste navegador. Usuários e auditoria são mantidos. Exporte um backup antes, se precisar.', 'Limpar dados')) { acoes.dados.comecarVazio(); toast('Dados de negócio limpos'); } },
+        'modo-local': async () => {
+          if (!(await confirmar('Usar só neste navegador?', 'Este computador deixa de usar a planilha. Os dados da planilha continuam lá para os outros computadores; aqui volta a valer o que estava guardado só neste navegador.', 'Usar só neste navegador'))) return;
+          definirModoDados('local'); location.reload();
+        },
+        'modo-planilha': () => { definirModoDados(null); location.reload(); },
+        vazio: async () => { if (await confirmar('Limpar dados?', (store.adaptador.nome === 'planilha' ? 'Obras, OPs, FAs, itens, materiais e notificações serão apagados da planilha, para todos os computadores.' : 'Obras, OPs, FAs, itens, materiais e notificações serão apagados deste navegador.') + ' Usuários e auditoria são mantidos. Exporte um backup antes, se precisar.', 'Limpar dados')) { acoes.dados.comecarVazio(); toast('Dados de negócio limpos'); } },
       },
     });
     const muda = e => { if (e.target.matches('[data-obra-config]')) { obraSel = e.target.value; ctx.rerender(); } };

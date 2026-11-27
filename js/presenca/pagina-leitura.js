@@ -3,6 +3,7 @@
 // Configuração em um toque: leitura.html#url=<URL do app da Web>&token=<token> (o link é gerado em Presença › Conexão).
 import { html, campo, ic, toast } from '../core/ui.js';
 import { conexao, salvarConexao, limparConexao, testarConexao, chamar } from './conexao.js';
+import { aoPoderInstalar, instalarApp } from '../core/instalar.js';
 import { montarLeitor } from './leitor.js';
 
 const raiz = document.getElementById('leitura');
@@ -46,7 +47,11 @@ async function iniciar() {
     enviar: async (codigo, origem, texto) => (await chamar('leitura', { codigo, origem, texto })).leitura,
   });
   rodape.innerHTML = String(html`<p class="muted small" data-turno>Consultando a planilha…</p>
+    <button type="button" class="btn outline sm" data-instalar hidden>${ic('download')}<span>Instalar como aplicativo</span></button>
     <button type="button" class="btn ghost sm" data-trocar>${ic('settings')}<span>Trocar conexão deste aparelho</span></button>`);
+  const botaoInstalar = rodape.querySelector('[data-instalar]');
+  botaoInstalar.addEventListener('click', () => instalarApp());
+  aoPoderInstalar(pode => { botaoInstalar.hidden = !pode; });
   rodape.querySelector('[data-trocar]').addEventListener('click', () => {
     if (confirm('Apagar a conexão deste aparelho? Será preciso o link ou o token de novo.')) { limparConexao(); telaConfigurar(); }
   });
