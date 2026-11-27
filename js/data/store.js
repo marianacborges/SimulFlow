@@ -39,11 +39,6 @@ export function criarStore(adaptador) {
     adaptador.gravar(estado);
   }
 
-  /** Troca de todos os dados: o adaptador da planilha envia de uma vez (adaptador.substituir). */
-  function persistirTudo() {
-    if (adaptador.substituir) adaptador.substituir(estado); else adaptador.gravar(estado);
-  }
-
   function normalizar(dados) {
     const e = estadoVazio();
     for (const c of COLECOES) e[c] = Array.isArray(dados?.[c]) ? dados[c] : [];
@@ -131,12 +126,12 @@ export function criarStore(adaptador) {
     importar(pacote) {
       const dados = validarBackup(pacote);
       estado = normalizar(dados);
-      persistirTudo();
+      persistir();
       notificar();
     },
     substituir(dados) {
       estado = normalizar(dados);
-      persistirTudo();
+      persistir();
       notificar();
     },
     estadoBruto() {

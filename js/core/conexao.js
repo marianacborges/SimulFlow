@@ -1,7 +1,5 @@
-// Conexão deste computador/celular com a planilha Google (URL do app da Web do Apps Script + token).
-// Fica no localStorage do aparelho e é usada pelos dados do SimulFlow e pela Presença.
-// O token define o perfil: leitor (celular de leitura), sistema (computador de setor),
-// planejamento ou admin.
+// Conexão deste aparelho com a planilha Google da Presença (URL do app da Web do Apps Script + token).
+// Fica no localStorage do aparelho; o token define o perfil: leitor, planejamento ou admin.
 
 const CHAVE = 'simulflow.presenca.conexao';
 
@@ -88,20 +86,3 @@ export async function testarConexao(url, token) {
   const st = await chamar('status', {}, c);
   return { ...c, perfil: st.perfil, nome: st.nome, planilhaUrl: st.planilhaUrl || '' };
 }
-
-// ---------------- Modo dos dados do SimulFlow neste navegador ----------------
-// 'planilha': OPs, FAs, obras, usuários... ficam na planilha Google, compartilhados entre computadores.
-// 'local': ficam só neste navegador (modo de antes; útil para testes e demonstração).
-// null: ainda não escolhido (mostra a tela "Configurar este computador").
-const CHAVE_MODO = 'simulflow.modo';
-
-export function modoDados() {
-  try { const m = localStorage.getItem(CHAVE_MODO); return m === 'planilha' || m === 'local' ? m : null; } catch { return 'local'; }
-}
-
-export function definirModoDados(m) {
-  try { if (m) localStorage.setItem(CHAVE_MODO, m); else localStorage.removeItem(CHAVE_MODO); } catch { /* sem armazenamento */ }
-}
-
-/** Perfis do token que acessam os dados do SimulFlow. */
-export const acessaDados = c => !!c && ['sistema', 'planejamento', 'admin'].includes(c.perfil);

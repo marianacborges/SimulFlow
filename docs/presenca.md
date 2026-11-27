@@ -44,7 +44,7 @@ O arquivo `.nojekyll` na raiz faz o GitHub publicar os arquivos como estão.
 3. Cole o código. Há duas formas:
    - um arquivo só, com o `Codigo.gs` combinado (todos os `.gs` juntos), colado no `Código.gs`;
    - ou um arquivo de script para cada `.gs` da pasta `apps-script/` (`Config`, `Dominio`,
-     `Planilha`, `Dados`, `Resumo`, `Api`, `Menu`).
+     `Planilha`, `Resumo`, `Api`, `Menu`).
 4. Em **Configurações do projeto** (engrenagem), marque *Mostrar o arquivo de manifesto
    "appsscript.json"* e cole o conteúdo de `apps-script/appsscript.json`. Ele define o fuso
    America/Sao_Paulo e o runtime V8. Esse passo é opcional: o código já usa o fuso de São Paulo.
@@ -54,7 +54,6 @@ O arquivo `.nojekyll` na raiz faz o GitHub publicar os arquivos como estão.
    conta dona da planilha. Se aparecer "O Google não verificou este app", clique em **Avançado ›
    Acessar (não seguro)**. Isso cria as abas abaixo e protege as de registros:
    - Hoje, Colaboradores, Registros, Turnos, Histórico detalhado e Acessos;
-   - **Dados**, onde ficam os dados do SimulFlow quando os computadores estão conectados;
    - **Config**, com os e-mails do resumo.
 
    Se o menu não aparecer ou der "erro desconhecido", abra o Apps Script, escolha a função
@@ -85,9 +84,8 @@ Na planilha: **SimulFlow › 3. Gerar token de acesso…** O token aparece uma �
   | Perfil | Para quê |
   |---|---|
   | **leitor** | Celular da leitura: só registra presenças |
-  | **sistema** | Computador de um setor: dados do SimulFlow (OPs, FAs…), sem a Presença |
-  | **planejamento** | Presença completa e dados do SimulFlow |
-  | **admin** | Tudo, mais fechar o turno, gerenciar acessos, e-mails do resumo e substituir os dados |
+  | **planejamento** | Presença completa: planilha do dia, histórico, relatório e cadastro |
+  | **admin** | Tudo, mais fechar o turno, gerenciar acessos e os e-mails do resumo |
 
 ## 5. Conectar o PC do Planejamento
 

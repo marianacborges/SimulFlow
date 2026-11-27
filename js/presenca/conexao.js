@@ -1,7 +1,7 @@
-// Conexão com a planilha usada pela Presença: é a mesma do resto do SimulFlow (js/core/conexao.js).
-import { conexao, salvarConexao, limparConexao, validarUrl, chamar, explicarRespostaInvalida, testarConexao, modoDados, definirModoDados, acessaDados } from '../core/conexao.js';
+// Conexão com a planilha usada pela Presença (js/core/conexao.js) e funções só da Presença.
+import { conexao, salvarConexao, limparConexao, validarUrl, chamar, explicarRespostaInvalida, testarConexao } from '../core/conexao.js';
 
-export { conexao, salvarConexao, limparConexao, validarUrl, chamar, explicarRespostaInvalida, testarConexao, modoDados, definirModoDados, acessaDados };
+export { conexao, salvarConexao, limparConexao, validarUrl, chamar, explicarRespostaInvalida, testarConexao };
 
 export const podePlanejar = c => !!c && ['planejamento', 'admin'].includes(c.perfil);
 export const ehAdminPlanilha = c => !!c && c.perfil === 'admin';

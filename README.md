@@ -4,14 +4,12 @@ Acompanhamento de **OPs** (ordens de produção) e **FAs** (frentes/ações) ent
 Projetos/Obras, Almoxarifado e Qualidade.
 
 O SimulFlow é uma aplicação estática: HTML, CSS e JavaScript em módulos (ES modules). Não precisa
-de framework, build nem dependências. Os dados ficam **na planilha Google** (compartilhados entre os
-computadores conectados) ou **só no navegador** (`localStorage`), à escolha de cada computador.
-Veja a seção 8.
+de framework, build nem dependências. Os dados ficam no navegador (`localStorage`), atrás de uma
+camada que pode ser trocada por uma API depois.
 
-> **Protótipo.** O hash PBKDF2 evita senha em texto, mas **não substitui autenticação em servidor**:
-> quem tem o token de um computador consegue ler os dados da planilha (inclusive os hashes), e as
-> regras de permissão são conferidas no navegador. Para uso real é preciso servidor, banco de dados,
-> regras validadas no servidor e adequação à LGPD.
+> **Protótipo.** Senhas e dados ficam no navegador de quem usa. O hash PBKDF2 evita senha em
+> texto, mas **não substitui autenticação em servidor**. Para uso real é preciso servidor, banco
+> de dados, HTTPS, regras validadas no servidor e adequação à LGPD.
 
 ---
 
@@ -231,34 +229,12 @@ campo aparece nos formulários e nos detalhes da entidade e é gravado em `regis
 Regras completas: `js/data/regras.js` e `js/data/acoes/*`. Diferenças em relação ao protótipo:
 `docs/paridade.md`.
 
-## 8. Onde ficam os dados: planilha Google ou só no navegador
+## 8. Trocar o armazenamento
 
-Na primeira abertura, cada computador mostra **Configurar este computador**. Há duas opções.
-
-**Conectar à planilha (recomendado para uso real).** OPs, FAs, obras, itens, usuários e senhas
-(hash) ficam na aba **Dados** da mesma planilha Google da Presença (`apps-script/Dados.gs`). Todos os
-computadores conectados veem os mesmos dados, e o login vale em qualquer um deles. Para conectar:
-1. O host cria um acesso para o computador em **Presença operacional › Conexão › Novo acesso**,
-   escolhendo o perfil **Sistema** (computador de setor). O perfil Sistema não acessa a Presença.
-2. No computador, cole a **URL do app da Web** e o **token** na tela de configuração.
-3. Se a planilha estiver vazia e o navegador já tiver dados, o SimulFlow baixa um backup JSON e
-   pergunta se deve enviar tudo ou só os usuários.
-
-Como a sincronização funciona:
-- Cada computador trabalha sobre uma cópia local e envia as alterações em segundo plano.
-- O que os outros computadores mudaram chega a cada 15 segundos e também ao voltar para a janela.
-- **Sem internet**, as alterações ficam guardadas no computador e são enviadas quando a conexão
-  voltar. O menu mostra a situação: "Salvo na planilha", "Sincronizando" ou "Sem conexão".
-- Se dois computadores alterarem o mesmo registro ao mesmo tempo, vale a última gravação.
-- Importar backup e Limpar dados trocam os dados de todos. Isso pede um acesso admin; sem ele, as
-  mudanças são enviadas registro a registro.
-
-**Usar só neste navegador.** É o modo de antes: os dados ficam no `localStorage`. Serve para testes
-e demonstração. Para trocar de modo, use **Configurações › Dados e backup**.
-
-Para outro armazenamento (API própria), crie um adaptador com a interface
-`{ ler(), gravar(dados), limpar(), observarExterno(cb) }`. Use como exemplo
-`js/data/adapters/local.js` e `js/data/adapters/planilha.js`, e passe-o em `js/app.js`.
+`js/data/adapters/local.js` implementa `{ ler(), gravar(dados), limpar(), observarExterno(cb) }`.
+Para usar API ou Google Drive, crie outro adaptador com a mesma interface e passe-o em
+`js/app.js` (`criarStore(seuAdaptador)`). As abas e as ações não mudam. Num backend real, as
+checagens de `js/data/acoes/*` precisam existir também no servidor.
 
 ### Instalar como aplicativo
 

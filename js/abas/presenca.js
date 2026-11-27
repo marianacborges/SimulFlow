@@ -7,7 +7,7 @@ import { combinaTexto } from '../core/util.js';
 import { baixar } from '../core/exportar.js';
 import { gerarXlsx, TIPO_XLSX } from '../core/xlsx.js';
 import { controleEstado } from '../componentes/comuns.js';
-import { conexao, salvarConexao, limparConexao, chamar, testarConexao, podePlanejar, ehAdminPlanilha, linkCelular, modoDados, definirModoDados } from '../presenca/conexao.js';
+import { conexao, salvarConexao, limparConexao, chamar, testarConexao, podePlanejar, ehAdminPlanilha, linkCelular } from '../presenca/conexao.js';
 import { montarLeitor, lerUmaTag, suporteNfc, dadosDoTexto } from '../presenca/leitor.js';
 import { colaboradoresDoCSV, gerarCSV, MODELO_CSV } from '../presenca/csv.js';
 
@@ -71,11 +71,6 @@ function semConexao() {
 }
 
 function soPlanejamento(con) {
-  if (con.perfil === 'sistema') {
-    return html`${cabecalho('Presença operacional', '')}<div class="panel"><h2>Computador de setor</h2>
-      <p class="muted" style="margin:8px 0 14px">Este computador está conectado como <strong>${con.nome}</strong> (perfil sistema): ele usa os dados do SimulFlow, sem acesso à Presença. Para ver a planilha do dia aqui, conecte com um acesso Planejamento ou Admin.</p>
-      <a class="btn outline" href="#/presenca/conexao">${ic('link')}<span>Conexão</span></a></div>`;
-  }
   return html`${cabecalho('Presença operacional', '')}<div class="panel"><h2>Acesso de leitor</h2>
     <p class="muted" style="margin:8px 0 14px">Este aparelho está conectado como <strong>${con.nome}</strong> (perfil leitor): ele só registra leituras. A planilha do dia, o cadastro e o histórico são do Planejamento.</p>
     <a class="btn primario" href="#/presenca/leitura">${ic('nfc')}<span>Ir para a leitura</span></a></div>`;
@@ -298,7 +293,7 @@ function viewConexao(ctx) {
       <div class="table-wrap"><div class="table-scroll"><table><thead><tr><th>Nome</th><th>Perfil</th><th>Criado em</th><th>Último uso</th><th>Situação</th><th></th></tr></thead><tbody>
       ${(dados.acessos || []).map(a => html`<tr><td><strong>${a.nome}</strong></td><td>${a.perfil}</td><td>${dataHora(a.criadoEm)}</td><td>${a.ultimoUso ? dataHora(a.ultimoUso) : '—'}</td><td>${badge(a.ativo ? 'Ativo' : 'Desativado')}</td>
         <td>${a.ativo ? botao('Revogar', { acao: 'acesso-revogar', dados: { id: a.id, nome: a.nome }, v: 'outline', tam: 'sm' }) : ''}</td></tr>`)}</tbody></table></div></div>
-      <p class="muted small" style="margin-top:8px">Perfis: <strong>leitor</strong> só registra leituras (celular); <strong>sistema</strong> é o computador de um setor (dados do SimulFlow, sem presença); <strong>planejamento</strong> vê a planilha, o histórico e cadastra colaboradores; <strong>admin</strong> também fecha o turno e gerencia acessos.</p></section>` : ''}`;
+      <p class="muted small" style="margin-top:8px">Perfis: <strong>leitor</strong> só registra leituras (celular); <strong>planejamento</strong> vê a planilha, o histórico e cadastra colaboradores; <strong>admin</strong> também fecha o turno e gerencia acessos.</p></section>` : ''}`;
 }
 
 // ---------------- ações ----------------
@@ -388,8 +383,6 @@ function mostrarToken(acesso) {
     ${campo('Token', html`<input readonly value="${acesso.token}" data-copiar>`)}
     ${link ? html`${campo('Link para o celular (abre a tela de leitura já configurada)', html`<input readonly value="${link}" data-copiar>`)}
       <p class="muted small">Envie o link para o celular do Planejamento e abra no Chrome. O token vai no final do link (#) e é guardado só no aparelho.</p>` : ''}
-    ${acesso.perfil !== 'leitor' ? html`${campo('URL do app da Web', html`<input readonly value="${con.url}" data-copiar>`)}
-      <p class="muted small">No computador ${acesso.perfil === 'sistema' ? 'do setor' : ''}, abra o SimulFlow e, na tela "Configurar este computador", cole a URL e o token.</p>` : ''}
     <p class="muted small">Toque num campo para selecionar e copiar.</p>`, false);
   document.querySelectorAll('[data-copiar]').forEach(i => i.addEventListener('focus', () => { i.select(); navigator.clipboard?.writeText(i.value).then(() => toast('Copiado'), () => {}); }));
 }
@@ -440,12 +433,6 @@ export default {
         conectar: async () => {
           const form = el.querySelector('[data-form-conexao]');
           const c = await testarConexao(form.url.value, form.token.value);
-          if (modoDados() === 'planilha') {
-            if (!(await confirmar('Trocar a conexão deste computador?', 'Os dados do SimulFlow deste computador também usam esta conexão. O sistema será recarregado com o novo acesso.', 'Trocar e recarregar'))) return;
-            salvarConexao(c);
-            location.reload();
-            return;
-          }
           salvarConexao(c);
           limparCache();
           desmontarLeitor();
@@ -454,18 +441,13 @@ export default {
         },
         'testar-conexao': async () => { const c = conexao(); const n = await testarConexao(c.url, c.token); salvarConexao(n); toast(`Conexão OK: ${n.nome} (${n.perfil})`); ctx.rerender(); },
         desconectar: async () => {
-          if (modoDados() === 'planilha') {
-            if (!(await confirmar('Desconectar este computador da planilha?', 'Ele deixa de usar a planilha para os dados do SimulFlow e para a Presença. Os dados continuam na planilha para os outros computadores. Na próxima abertura, aparece a tela "Configurar este computador".', 'Desconectar'))) return;
-            limparConexao(); definirModoDados(null); location.reload();
-            return;
-          }
           if (!(await confirmar('Desconectar este aparelho?', 'O token será apagado deste navegador. Ele continua válido na planilha até ser revogado.'))) return;
           limparConexao(); limparCache(); desmontarLeitor(); ctx.rerender();
         },
         'acesso-novo': () => modal({
           titulo: 'Novo acesso', descricao: 'Cada aparelho ou pessoa recebe seu próprio token.',
           corpo: html`${campo('Nome', html`<input name="nome" required placeholder="Celular do Planejamento">`, { obrig: true })}
-            ${campo('Perfil', seletor('perfil', [{ v: 'leitor', t: 'Leitor — só registra leituras (celular)' }, { v: 'sistema', t: 'Sistema — computador de setor (dados do SimulFlow, sem presença)' }, { v: 'planejamento', t: 'Planejamento — planilha, histórico e cadastro' }, { v: 'admin', t: 'Admin — tudo, inclusive fechar o turno' }], 'leitor'))}`,
+            ${campo('Perfil', seletor('perfil', [{ v: 'leitor', t: 'Leitor — só registra leituras (celular)' }, { v: 'planejamento', t: 'Planejamento — planilha, histórico e cadastro' }, { v: 'admin', t: 'Admin — tudo, inclusive fechar o turno' }], 'leitor'))}`,
           rotuloOk: 'Criar acesso',
           onOk: async v => { const r = await chamar('acessos.criar', { nome: v.nome, perfil: v.perfil }); recarregarAcessos(); setTimeout(() => mostrarToken(r.acesso), 50); },
         }),
@@ -496,7 +478,6 @@ export default {
     let corpo;
     if (secao === 'conexao') corpo = viewConexao(ctx);
     else if (!con) corpo = semConexao();
-    else if (con.perfil === 'sistema') corpo = soPlanejamento(con);
     else if (secao === 'leitura') corpo = viewLeitura(ctx);
     else if (!podePlanejar(con)) corpo = soPlanejamento(con);
     else if (secao === 'colaboradores') corpo = viewColaboradores(ctx);

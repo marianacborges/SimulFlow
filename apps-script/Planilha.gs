@@ -10,11 +10,10 @@ CABECALHOS[CONFIG.ABAS.REGISTROS] = ['Data', 'Hora', 'Matrícula', 'Nome', 'Fun�
 CABECALHOS[CONFIG.ABAS.TURNOS] = ['Data', 'Aberto em', 'Fechado em', 'Tipo de fechamento', 'Fechado por', 'Total presentes', 'Total ativos', 'E-mail enviado'];
 CABECALHOS[CONFIG.ABAS.HISTORICO] = ['Data', 'Situação', 'Nome', 'Matrícula', 'Função', 'Data/Hora', 'Fora do turno'];
 CABECALHOS[CONFIG.ABAS.ACESSOS] = ['Nome', 'Perfil', 'Hash do token', 'Criado em', 'Ativo', 'Último uso'];
-CABECALHOS[CONFIG.ABAS.DADOS] = ['Coleção', 'ID', 'JSON', 'Versão', 'Atualizado em', 'Por'];
 CABECALHOS[CONFIG.ABAS.CONFIG] = ['Chave', 'Valor'];
 
 // Abas que só o script (dono da planilha) altera.
-var ABAS_PROTEGIDAS = [CONFIG.ABAS.REGISTROS, CONFIG.ABAS.TURNOS, CONFIG.ABAS.HISTORICO, CONFIG.ABAS.ACESSOS, CONFIG.ABAS.DADOS, CONFIG.ABAS.CONFIG];
+var ABAS_PROTEGIDAS = [CONFIG.ABAS.REGISTROS, CONFIG.ABAS.TURNOS, CONFIG.ABAS.HISTORICO, CONFIG.ABAS.ACESSOS, CONFIG.ABAS.CONFIG];
 
 function planilhaAtiva() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();

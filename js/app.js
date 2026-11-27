@@ -2,9 +2,6 @@
 import { carregarConfig, config } from './core/config.js';
 import { criarStore } from './data/store.js';
 import { criarAdaptadorLocal } from './data/adapters/local.js';
-import { criarAdaptadorPlanilha } from './data/adapters/planilha.js';
-import { conexao, salvarConexao, testarConexao, chamar, modoDados, definirModoDados, acessaDados } from './core/conexao.js';
-import { baixarJSON } from './core/exportar.js';
 import { aoPoderInstalar, instalarApp } from './core/instalar.js';
 import { criarAcoes } from './data/acoes/index.js';
 import { dadosDemonstracao } from './data/demo.js';
@@ -44,26 +41,10 @@ async function iniciar() {
     return;
   }
   document.title = config.app.nome;
-  const modo = modoDados();
-  if (!modo) return telaConfigurarComputador();
-  if (modo === 'planilha') {
-    const con = conexao();
-    if (!acessaDados(con)) return telaConfigurarComputador('A conexão salva neste computador não dá acesso aos dados do SimulFlow. Use um acesso Sistema, Planejamento ou Admin.');
-    raiz.innerHTML = String(html`<main class="auth-page"><div class="auth-card">${marca()}<p class="muted">Carregando os dados da planilha…</p></div></main>`);
-    const adaptador = criarAdaptadorPlanilha({ url: con.url, chamar: (acao, dados) => chamar(acao, dados, conexao()) });
-    try {
-      await adaptador.iniciar();
-    } catch (e) {
-      return telaConfigurarComputador('Não foi possível abrir os dados da planilha: ' + codigoAntigo(e).message);
-    }
-    store = criarStore(adaptador);
-    store.carregar();
-    adaptador.aoMudarEstado(atualizarSincronia);
-  } else {
-    store = criarStore(criarAdaptadorLocal());
-    const existia = store.carregar();
-    if (!existia) await primeiraCarga();
-  }
+  limparModoPlanilha();
+  store = criarStore(criarAdaptadorLocal());
+  const existia = store.carregar();
+  if (!existia) await primeiraCarga();
   acoes = criarAcoes(store, usuarioAtual);
   store.adaptador.observarExterno(() => store.recarregar());
   store.assinar(() => {
@@ -76,6 +57,13 @@ async function iniciar() {
   telaInicial();
 }
 
+/** Remove o que sobrou do modo "dados na planilha" (retirado): os dados voltam a ficar só no navegador. */
+function limparModoPlanilha() {
+  for (const k of ['simulflow.modo', 'simulflow.dados.planilha', 'simulflow.dados.planilha.meta', 'simulflow.dados.planilha.fila']) {
+    try { localStorage.removeItem(k); } catch { /* sem acesso */ }
+  }
+}
+
 /** Primeiro uso neste navegador: usa data/dados-iniciais.json (instalado pelo CLI) ou a demonstração. */
 async function primeiraCarga() {
   try {
@@ -83,73 +71,6 @@ async function primeiraCarga() {
     if (r.ok) { store.importar(await r.json()); return; }
   } catch { /* sem arquivo inicial: segue com a demonstração */ }
   store.substituir(dadosDemonstracao());
-}
-
-// ---------------- Configurar este computador (planilha ou só este navegador) ----------------
-
-/** A planilha ainda está com o script antigo (sem as ações de dados)? Explica como atualizar. */
-function codigoAntigo(e) {
-  if (e?.status === 404 && /Ação desconhecida/.test(e.message)) {
-    return new Error('A planilha ainda está com o código antigo. No Apps Script, cole o Codigo.gs novo, salve e publique uma nova versão (Implantar › Gerenciar implantações › editar › Nova versão).');
-  }
-  return e;
-}
-
-const temDados = d => !!d && Object.entries(d).some(([c, v]) => c !== 'config' && c !== 'auditoria' && Array.isArray(v) && v.length);
-
-function resumoLocal(d) {
-  const n = c => (d?.[c] || []).length;
-  return `${n('usuarios')} usuário(s), ${n('obras')} obra(s), ${n('ops')} OP(s), ${n('fas')} FA(s) e ${n('itens')} item(ns)`;
-}
-
-function telaConfigurarComputador(mensagem = '') {
-  const salva = conexao();
-  telaAcesso(html`<h1>Configurar este computador</h1>
-    <form class="auth-form" novalidate>
-      <p class="muted small">Para todos os setores verem os mesmos dados, conecte à planilha Google com o acesso que o host gerou para este computador (Presença operacional › Conexão › Novo acesso, perfil Sistema).</p>
-      ${campo('URL do app da Web', html`<input name="url" required inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" value="${salva?.url || ''}">`)}
-      ${campo('Token de acesso', html`<input name="token" required type="password" autocomplete="off" placeholder="sf_…" value="${salva?.token || ''}">`)}
-      <p role="alert" class="error">${mensagem}</p>
-      <button class="btn primario full" type="submit">Conectar à planilha</button>
-      <button class="btn ghost full" type="button" data-local>Usar só neste navegador</button>
-      <p class="muted small">"Só neste navegador" guarda os dados apenas aqui, como antes (bom para testes e demonstração).</p></form>`,
-  async d => {
-    const c = await testarConexao(d.url, d.token);
-    if (!acessaDados(c)) throw new Error(`Este acesso é de perfil "${c.perfil}" (celular de leitura). Para os dados do SimulFlow use um acesso Sistema, Planejamento ou Admin.`);
-    const remoto = await chamar('dados.tudo', {}, c).catch(e => { throw codigoAntigo(e); });
-    const local = criarAdaptadorLocal().ler();
-    salvarConexao(c);
-    if (!temDados(remoto.estado) && (temDados(local) || local?.usuarios?.length)) return telaMigracao(c, local);
-    definirModoDados('planilha');
-    location.reload();
-  }, 'configurar');
-  raiz.querySelector('[data-local]').addEventListener('click', () => { definirModoDados('local'); iniciar(); });
-}
-
-/** Planilha vazia e navegador com dados: enviar tudo ou começar só com os usuários (backup antes). */
-function telaMigracao(c, local) {
-  telaAcesso(html`<h1>A planilha ainda está vazia</h1>
-    <form class="auth-form" novalidate>
-      <p>Este navegador tem ${resumoLocal(local)}.</p>
-      <p class="muted small">Antes de continuar, um backup JSON destes dados será baixado para o seu computador.</p>
-      <p role="alert" class="error"></p>
-      <button class="btn primario full" type="submit" data-opcao="tudo">Enviar os dados deste navegador para a planilha</button>
-      <button class="btn outline full" type="button" data-opcao="usuarios">Começar sem dados, levando só os usuários</button>
-      <button class="btn ghost full" type="button" data-voltar>Voltar</button></form>`,
-  () => migrar('tudo'), 'migrar');
-  async function migrar(opcao) {
-    baixarJSON(`simulflow-backup-antes-da-planilha-${new Date().toISOString().slice(0, 10)}`, { formato: 'simulflow-backup', versao: local.versao || 1, exportadoEm: new Date().toISOString(), dados: local });
-    const estado = opcao === 'tudo' ? local : { usuarios: local.usuarios || [], config: local.config || {} };
-    await chamar('dados.substituir', { estado }, c);
-    definirModoDados('planilha');
-    location.reload();
-  }
-  const form = raiz.querySelector('form');
-  form.querySelector('[data-opcao=usuarios]').addEventListener('click', async e => {
-    e.currentTarget.disabled = true;
-    try { await migrar('usuarios'); } catch (err) { form.querySelector('[role=alert]').textContent = err.message; e.currentTarget.disabled = false; }
-  });
-  form.querySelector('[data-voltar]').addEventListener('click', () => telaConfigurarComputador());
 }
 
 function telaInicial(mensagem = '') {
@@ -191,12 +112,9 @@ function ligarOlhos(el) {
   }));
 }
 
-function telaAcesso(conteudo, aoEnviar, tipo = '') {
-  const nota = tipo ? '' : modoDados() === 'planilha'
-    ? html`<p class="auth-note">Dados na planilha Google, compartilhados entre os computadores conectados. <a class="link" href="#" data-trocar-modo>Trocar</a></p>`
-    : html`<p class="auth-note">Dados e senhas ficam somente neste navegador. <a class="link" href="#" data-trocar-modo>Conectar à planilha</a></p>`;
-  raiz.innerHTML = String(html`<main class="auth-page"><div class="auth-card">${marca()}${conteudo}</div>${nota}</main>`);
-  raiz.querySelector('[data-trocar-modo]')?.addEventListener('click', e => { e.preventDefault(); definirModoDados(null); location.reload(); });
+function telaAcesso(conteudo, aoEnviar) {
+  raiz.innerHTML = String(html`<main class="auth-page"><div class="auth-card">${marca()}${conteudo}</div>
+    <p class="auth-note">Protótipo: dados e senhas ficam somente neste navegador.</p></main>`);
   const form = raiz.querySelector('form');
   ligarOlhos(raiz);
   form.addEventListener('submit', async e => {
@@ -280,14 +198,13 @@ function montarShell() {
     <aside class="sidebar" aria-label="Menu principal">
       <a href="#/" class="brand"><span class="brand-mark">${ic('workflow', 22)}</span><span class="brand-text"><strong>${config.app.nome}</strong><span class="brand-sub">${config.app.subtitulo}</span></span></a>
       <div class="nav-caption">ÁREA DE TRABALHO</div><nav class="nav-list" id="nav"></nav>
-      <div class="sidebar-bottom"><div class="connection" id="sincronia"><i class="live-dot"></i><span></span></div><div class="sidebar-footer">${config.app.nome} · v${config.app.versao}</div></div>
+      <div class="sidebar-bottom"><div class="connection"><i class="live-dot"></i>Setores conectados</div><div class="sidebar-footer">${config.app.nome} · v${config.app.versao}</div></div>
     </aside>
     <div class="workspace"><header class="topbar">
       <div class="breadcrumbs"><button class="btn ghost icon mobile-menu" data-menu aria-label="Abrir menu" title="Abrir menu">${ic('menu')}</button>
         <button class="btn ghost icon hide-small" data-recolher title="Recolher ou expandir menu" aria-label="Recolher ou expandir menu">${ic('collapse')}</button>
         <span>Área de trabalho</span>${ic('chevronRight', 12)}<strong id="titulo-aba"></strong></div>
       <div class="top-actions"><div class="top-search">${ic('search')}<input id="busca-geral" type="search" placeholder="Buscar OP, FA ou item..." aria-label="Busca geral"><div class="top-search-results" id="resultados" hidden></div></div>
-        <span class="badge amber" id="aviso-sincronia" hidden></span>
         <a href="#/notificacoes" class="btn ghost icon notify" id="sino" title="Notificações" aria-label="Notificações">${ic('bell', 18)}<span class="notify-count" hidden></span></a>
         <div class="user-block"><span class="avatar" id="avatar"></span><div class="user-text"><strong id="nome-usuario"></strong><small id="perfil-usuario"></small></div>
           <button class="btn ghost icon" data-instalar hidden title="Instalar o SimulFlow como aplicativo" aria-label="Instalar o SimulFlow como aplicativo">${ic('download')}</button>
@@ -308,7 +225,6 @@ function montarShell() {
   raiz.querySelector('#nav').addEventListener('click', e => { if (e.target.closest('a')) shell.classList.remove('mobile-open'); });
   ligarBuscaGeral();
   atualizarShell();
-  atualizarSincronia(store.adaptador.estadoSincronia?.());
   roteador = criarRoteador({ container: raiz.querySelector('#app'), contexto });
   roteador.iniciar();
 }
@@ -321,31 +237,6 @@ assinar('aba', ({ id, titulo }) => {
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.aba === id));
   document.getElementById('sino')?.classList.toggle('ativo', id === 'notificacoes');
 });
-
-/** Situação da sincronização com a planilha (menu lateral e aviso no topo). */
-let ultimaSituacao = '';
-function atualizarSincronia(e) {
-  const caixa = document.getElementById('sincronia');
-  const aviso = document.getElementById('aviso-sincronia');
-  if (e && e.situacao !== ultimaSituacao) {
-    if (e.situacao === 'erro' && e.mensagem) toast(e.mensagem, 'erro');
-    else if (ultimaSituacao === 'offline' && e.situacao === 'ok') toast('Conexão com a planilha restabelecida');
-    else if (e.situacao === 'ok' && e.mensagem) toast(e.mensagem);
-    ultimaSituacao = e.situacao;
-  }
-  if (!caixa) return;
-  const textos = !e ? ['local', 'Só neste navegador']
-    : { ok: ['ok', 'Salvo na planilha'], sincronizando: ['sinc', `Sincronizando${e.pendentes ? ` (${e.pendentes})` : '…'}`], offline: ['offline', 'Sem conexão — guardado neste computador'], erro: ['erro', 'Erro na sincronização'] }[e.situacao];
-  caixa.dataset.situacao = textos[0];
-  caixa.querySelector('span').textContent = textos[1];
-  caixa.title = e?.mensagem || textos[1];
-  if (aviso) {
-    aviso.hidden = !e || !['offline', 'erro'].includes(e.situacao);
-    aviso.textContent = e?.situacao === 'erro' ? 'Erro ao salvar' : 'Sem conexão';
-    aviso.title = e?.mensagem || '';
-    aviso.className = 'badge ' + (e?.situacao === 'erro' ? 'red' : 'amber');
-  }
-}
 
 function atualizarBotaoTema() {
   const b = document.querySelector('[data-tema]');

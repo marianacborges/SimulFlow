@@ -72,7 +72,7 @@ const comandos = {
       if (Number.isNaN(Date.parse(inicio))) falhar('Use --relogio=AAAA-MM-DDTHH:MM:SS-03:00');
       g.relogio.definir(inicio);
     }
-    const tokens = { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor'), sistema: g.criarToken('PC da Produção (emulador)', 'sistema') };
+    const tokens = { admin: g.criarToken('Administrador (emulador)', 'admin'), planejamento: g.criarToken('PC do Planejamento (emulador)', 'planejamento'), leitor: g.criarToken('Celular do Planejamento (emulador)', 'leitor') };
     if (!vazio) {
       for (const [nome, matricula, funcao, tag] of [['Ana Souza', '00123', 'Soldador', '04:A1:B2:C3'], ['Bruno Lima', '00456', 'Montador', '04:D4:E5:F6'], ['Carla Dias', '00789', 'Soldador', '04:11:22:33'], ['Diego Alves', '01011', 'Pintor', '']]) {
         g.api('colaboradores.salvar', { colaborador: { nome, matricula, funcao, tag, ativo: true } }, tokens.planejamento);

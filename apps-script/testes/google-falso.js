@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const PASTA = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-export const ARQUIVOS_GS = ['Config.gs', 'Dominio.gs', 'Planilha.gs', 'Dados.gs', 'Resumo.gs', 'Api.gs', 'Menu.gs'];
+export const ARQUIVOS_GS = ['Config.gs', 'Dominio.gs', 'Planilha.gs', 'Resumo.gs', 'Api.gs', 'Menu.gs'];
 
 function formatar(data, fuso, padrao) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {

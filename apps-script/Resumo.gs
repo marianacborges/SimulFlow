@@ -3,6 +3,29 @@
  * Destinatários: aba "Config", chave "emails_resumo" (definidos pelo admin em Presença › Conexão).
  */
 
+// ---------------- Configurações (aba "Config": Chave | Valor) ----------------
+
+function lerConfigPlanilha(ss) {
+  var aba = (ss || planilhaAtiva()).getSheetByName(CONFIG.ABAS.CONFIG);
+  var r = {};
+  if (!aba) return r;
+  lerTodas(aba, 2).forEach(function (x) { var k = texto(x.v[0]); if (k) r[k] = { linha: x.linha, valor: texto(x.v[1]) }; });
+  return r;
+}
+
+function valorConfig(ss, chave) {
+  var c = lerConfigPlanilha(ss)[chave];
+  return c ? c.valor : '';
+}
+
+function salvarConfigPlanilha(ss, chave, valor) {
+  ss = ss || planilhaAtiva();
+  var aba = ss.getSheetByName(CONFIG.ABAS.CONFIG);
+  var atual = lerConfigPlanilha(ss)[chave];
+  if (atual) gravarLinha(aba, atual.linha, [chave, valor]);
+  else acrescentarLinhas(aba, [[chave, valor]]);
+}
+
 function emailsDoResumo(ss) {
   return String(valorConfig(ss, 'emails_resumo') || '').split(/[,;\s]+/).map(function (e) { return e.trim(); })
     .filter(function (e) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e); });
