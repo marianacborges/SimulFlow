@@ -37,7 +37,7 @@ direto do disco (`file://`). Há duas saídas:
 
 1. Abra o sistema. Sem usuários cadastrados, aparece a tela **Primeiro acesso**.
 2. Informe o usuário (login ou e-mail) que o host vai usar.
-3. Informe seu nome e uma senha (mínimo 8 caracteres) e clique em **Criar host e entrar**.
+3. Informe seu nome e uma senha (mínimo 8 caracteres) e clique em **Entrar**.
 
 O host é o administrador. Ele:
 
