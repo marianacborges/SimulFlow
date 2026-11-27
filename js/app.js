@@ -3,6 +3,7 @@ import { carregarConfig, config } from './core/config.js';
 import { criarStore } from './data/store.js';
 import { criarAdaptadorLocal } from './data/adapters/local.js';
 import { aoPoderInstalar, instalarApp } from './core/instalar.js';
+import { escolherJSON } from './core/exportar.js';
 import { criarAcoes } from './data/acoes/index.js';
 import { dadosDemonstracao } from './data/demo.js';
 import { atualizarDemonstracaoSePreciso } from './data/acoes/dados.js';
@@ -115,8 +116,7 @@ function ligarOlhos(el) {
 }
 
 function telaAcesso(conteudo, aoEnviar) {
-  raiz.innerHTML = String(html`<main class="auth-page"><div class="auth-card">${marca()}${conteudo}</div>
-    <p class="auth-note">Protótipo: dados e senhas ficam somente neste navegador.</p></main>`);
+  raiz.innerHTML = String(html`<main class="auth-page"><div class="auth-card">${marca()}${conteudo}</div></main>`);
   const form = raiz.querySelector('form');
   ligarOlhos(raiz);
   form.addEventListener('submit', async e => {
@@ -136,7 +136,8 @@ function telaCriarHost() {
       ${campo('Usuário (login)', html`<input name="login" required autocomplete="username" value="${config.app.hostLoginPadrao || ''}">`)}
       ${campo('Nome', html`<input name="nome" required autocomplete="name" maxlength="100">`)}
       ${campoSenha('senha', 'Senha', 'new-password')}${campoSenha('confirmacao', 'Confirmar senha', 'new-password')}
-      <p role="alert" class="error"></p><button class="btn primario full" type="submit">Criar host e entrar</button></form>`,
+      <p role="alert" class="error"></p><button class="btn primario full" type="submit">Criar host e entrar</button>
+      <button class="btn ghost full" type="button" data-ja-tenho>Já tenho conta em outro aparelho</button></form>`,
   async d => {
     if (!d.login.trim() || !d.nome.trim()) throw new Error('Informe usuário e nome');
     auth.validarSenha(d.senha);
@@ -146,6 +147,33 @@ function telaCriarHost() {
     auth.iniciarSessao(host);
     telaInicial();
   });
+  raiz.querySelector('[data-ja-tenho]').addEventListener('click', telaJaTenhoConta);
+}
+
+/**
+ * "Já tenho conta em outro aparelho": as contas ficam no aparelho onde foram criadas, então trazemos
+ * o backup exportado no outro aparelho (contas + dados). Depois é só entrar com o mesmo usuário e senha.
+ */
+function telaJaTenhoConta() {
+  telaAcesso(html`<h1>Já tenho conta</h1>
+    <form class="auth-form" novalidate>
+      <p>Traga o backup do aparelho onde você já usa o SimulFlow.</p>
+      <ol class="passos-conta">
+        <li>No outro aparelho, o host abre <strong>Configurações › Dados e backup › Exportar JSON completo</strong>.</li>
+        <li>Envie o arquivo para este aparelho (e-mail, WhatsApp, pendrive…).</li>
+        <li>Toque em <strong>Escolher arquivo de backup</strong> e selecione o arquivo.</li>
+      </ol>
+      <p class="muted small">Vêm as contas e todos os dados como estavam no backup. Depois disso, cada aparelho segue com a sua cópia.</p>
+      <p role="alert" class="error"></p>
+      <button class="btn primario full" type="submit">Escolher arquivo de backup</button>
+      <button class="btn ghost full" type="button" data-voltar>Voltar para o primeiro acesso</button></form>`,
+  async () => {
+    const pacote = await escolherJSON();
+    store.importar(pacote);
+    toast('Backup importado: entre com o seu usuário e senha');
+    telaLogin();
+  });
+  raiz.querySelector('[data-voltar]').addEventListener('click', telaCriarHost);
 }
 
 function telaLogin(mensagem = '') {

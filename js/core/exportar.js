@@ -66,6 +66,7 @@ export function escolherJSON() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json,.json';
+    input.addEventListener('cancel', () => reject(new Error('Nenhum arquivo selecionado')));
     input.onchange = async () => {
       const f = input.files?.[0];
       if (!f) return reject(new Error('Nenhum arquivo selecionado'));
