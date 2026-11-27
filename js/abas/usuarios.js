@@ -61,8 +61,7 @@ function view(ctx) {
         <td>${u.host ? 'Todas' : Object.entries(u.permissoes || {}).filter(([, v]) => v === 'editar').map(([k]) => config.abas.find(a => a.id === k)?.titulo || k).join(', ') || '—'}</td>
         <td>${badge(u.ativo ? 'Ativo' : 'Desativado')}${u.trocarSenha ? html`<span class="subline">Senha provisória</span>` : ''}</td>
         <td>${botao('', { acao: 'editar', dados: { id: u.id }, v: 'ghost', tam: 'icon', icone: 'edit', titulo: 'Editar ' + u.nome })}</td></tr>`)}
-    </tbody></table></div>${lista.length ? '' : vazio()}</div>
-    <p class="muted small" style="margin-top:12px">Protótipo: as senhas são guardadas com hash PBKDF2 no navegador. Para uso real é necessário servidor com autenticação, HTTPS e adequação à LGPD.</p>`;
+    </tbody></table></div>${lista.length ? '' : vazio()}</div>`;
 }
 
 export default {
