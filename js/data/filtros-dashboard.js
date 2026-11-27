@@ -94,5 +94,5 @@ export function resumoFiltrosDash(filtros = {}) {
   if (filtros.periodo) partes.push(PERIODOS_DASH.find(p => p.v === filtros.periodo)?.t);
   if (filtros.operacao) partes.push('Operação: ' + filtros.operacao);
   if (filtros.status) partes.push(STATUS_DASH.find(s => s.v === filtros.status)?.t);
-  return partes.filter(Boolean).join(' · ') || 'Todo o período · todas as operações · todos os status';
+  return partes.filter(Boolean).join(' · ');
 }
