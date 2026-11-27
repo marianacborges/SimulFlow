@@ -46,7 +46,7 @@ function viewAud(ctx) {
   const lista = auditoria(ctx);
   const tam = 25;
   const pagina = Math.min(f.pagina || 1, Math.max(1, Math.ceil(lista.length / tam)));
-  return html`${cabecalho('Auditoria completa', '', botao('Exportar auditoria', { acao: 'csv-aud', v: 'outline', icone: 'download' }))}
+  return html`${cabecalho('Histórico de Alterações', '', botao('Exportar alterações', { acao: 'csv-aud', v: 'outline', icone: 'download' }))}
     <div class="filters">${busca('aud.busca', f.busca, 'Buscar ação, usuário ou observação...')}
       ${filtro('aud.entidade', [{ v: '', t: 'Todos os registros' }, ...unicos(store.todos('auditoria').map(a => a.entidade))], f.entidade, 'Tipo de registro')}
       <input type="date" data-k="aud.dia" value="${f.dia}" aria-label="Data"><span class="filter-count">${lista.length} registros</span></div>
@@ -66,7 +66,7 @@ export default {
       cliques: {
         ...ctl.cliques,
         'csv-mov': () => baixarCSV('historico', movimentos(ctx).map(e => ({ Data: dataHora(e.em), Referencia: e.ref, Origem: e.origem, Destinatarios: e.destinatarios.join(', '), Responsavel: e.ator, Tipo: e.tipo, Descricao: e.descricao, StatusAnterior: e.statusAnterior, StatusNovo: e.statusNovo, Providencia: e.providencia }))),
-        'csv-aud': () => baixarCSV('auditoria', auditoria(ctx).map(a => ({ Data: dataHora(a.em), Usuario: a.ator, Acao: a.acao, Registro: a.entidade, Detalhes: diferencas(ctx.store, a.antes, a.depois).join(' | '), Observacao: a.nota, Turno: a.turno }))),
+        'csv-aud': () => baixarCSV('historico-de-alteracoes', auditoria(ctx).map(a => ({ Data: dataHora(a.em), Usuario: a.ator, Acao: a.acao, Registro: a.entidade, Detalhes: diferencas(ctx.store, a.antes, a.depois).join(' | '), Observacao: a.nota, Turno: a.turno }))),
       },
     });
   },
@@ -75,6 +75,6 @@ export default {
     const q = ctx.query?.q || '';
     if (q !== ultimaQuery) { ultimaQuery = q; if (q) estado.mov.busca = q; }
     const [secao = 'movimentacoes'] = ctx.params;
-    el.innerHTML = String(html`<main class="page">${subabas([['movimentacoes', 'Movimentações', 'history'], ['auditoria', 'Auditoria completa', 'lock']], secao, 'historico')}${secao === 'auditoria' ? viewAud(ctx) : viewMov(ctx)}</main>`);
+    el.innerHTML = String(html`<main class="page">${subabas([['movimentacoes', 'Movimentações', 'history'], ['auditoria', 'Histórico de Alterações', 'lock']], secao, 'historico')}${secao === 'auditoria' ? viewAud(ctx) : viewMov(ctx)}</main>`);
   },
 };

@@ -52,7 +52,7 @@ arquivo único `dist/simulflow.html` aberto por `file://`.
 9. **Ocultar obra**, separado de arquivar.
 10. **Abas reorganizadas.** Há uma nova aba Início (painel de OPs e FAs). Ordens de Produção fica
     dentro de PCP, junto com as FAs. A Qualidade ganha a seção “Laudos de itens” e o Histórico
-    ganha “Auditoria completa”.
+    ganha “Histórico de Alterações”.
 11. **Gráficos.** O gráfico “Evolução da produção” do protótipo era sintético (valores
     interpolados, não reais). Ele foi trocado por “Produção por obra” com dados reais. Os gráficos são SVG
     próprio, sem biblioteca.
@@ -174,7 +174,7 @@ arquivo único `dist/simulflow.html` aberto por `file://`.
 | Código | Situação | Observação |
 |---|---|---|
 | NOT-01 – NOT-03 | 🔁 | “Providência” só aparece quando registrada (o protótipo copiava a observação da OP para esse campo) |
-| HIS-01 – HIS-02 | ✅ | ➕ seção “Auditoria completa” com antes/depois |
+| HIS-01 – HIS-02 | ✅ | ➕ seção “Histórico de Alterações” (auditoria completa) com antes/depois |
 | REL-01 – REL-05 | ✅ | ➕ indicador de FAs atrasadas |
 | INI-01 – INI-05 | 🔁 | Painel reativado como aba Início, com OPs **e FAs**; gráfico sintético trocado por dados reais |
 | DEM-01 – DEM-04 | 🔁 | Mesmo cenário, com OPs ligadas às obras, 2 pedidos na Estaca Torpedo, T-35 no aditivo, etapa Pintura, 3 FAs e nenhum usuário |
