@@ -2,6 +2,9 @@
 // Não cria usuários: o primeiro acesso continua exigindo a criação do host.
 import { hoje, somarDias } from '../core/util.js';
 
+/** Aumente quando a demonstração mudar: navegadores que só têm dados de demonstração recebem a nova versão. */
+export const VERSAO_DEMO = 2;
+
 export function dadosDemonstracao(dia = hoje()) {
   const D = n => somarDias(dia, n);
   const agora = Date.now();
@@ -77,7 +80,7 @@ export function dadosDemonstracao(dia = hoje()) {
   ];
 
   const op = (n, faFicha, produto, obraId, planejado, produzido, setor, responsavel, ini, prazo, status) => ({
-    id: 'op-' + n, numero: 'OP-2026-00' + n, faFicha, produto, obraId, planejado, produzido, setor, responsavel, inicio: D(ini), prazo: D(prazo), status, campos: {}, ...base,
+    id: 'op-' + n, numero: 'OP-2026-' + String(n).padStart(3, '0'), faFicha, produto, obraId, planejado, produzido, setor, responsavel, inicio: D(ini), prazo: D(prazo), status, campos: {}, ...base,
   });
   const ops = [
     op(1, 'FA-001', 'Conjunto de engrenagens', 'o-torpedo', 500, 340, 'Usinagem', 'Carlos Silva', -10, 6, 'Em andamento'),
@@ -88,6 +91,22 @@ export function dadosDemonstracao(dia = hoje()) {
     op(6, 'FA-006', 'Carcaça de motor', 'o-torpedo', 150, 60, 'Fundição', 'Marcos Alves', -8, 3, 'Parada'),
     op(7, 'FA-007', 'Válvula de controle', 'o-torpedo', 300, 210, 'Montagem', 'Ana Souza', -6, 10, 'Em andamento'),
     op(8, 'FA-008', 'Kit de fixação', 'o-vasos', 1000, 1000, 'Montagem', 'Pedro Lima', -15, 0, 'Concluída'),
+    op(9, 'FA-009', 'Tampa do vaso', 'o-vasos', 120, 45, 'Usinagem', 'Rafael Mendes', -5, 12, 'Em andamento'),
+    op(10, 'FA-010', 'Anel de vedação', 'o-vasos', 800, 800, 'Usinagem', 'Beatriz Rocha', -20, -6, 'Concluída'),
+    op(11, 'FA-011', 'Base de ancoragem', 'o-ancoragem', 40, 12, 'Fundição', 'Marcos Alves', -12, -3, 'Em andamento'),
+    op(12, 'FA-012', 'Suporte de içamento', 'o-torpedo', 60, 0, 'Montagem', 'Pedro Lima', 2, 20, 'Aguardando material'),
+    op(13, 'FA-013', 'Bocal de inspeção', 'o-vasos', 90, 90, 'Qualidade', 'Juliana Costa', -9, 2, 'Aguardando qualidade'),
+    op(14, 'FA-014', 'Chapa de reforço', 'o-torpedo', 450, 300, 'Produção', 'Fernanda Dias', -6, 5, 'Em andamento'),
+    op(15, 'FA-015', 'Olhal de amarração', 'o-ancoragem', 200, 200, 'Montagem', 'Ana Souza', -25, -10, 'Concluída'),
+    op(16, 'FA-016', 'Conjunto de tubulação', 'o-vasos', 75, 20, 'Montagem', 'Rafael Mendes', -4, 18, 'Em andamento'),
+    op(17, 'FA-017', 'Pino guia', 'o-torpedo', 1200, 400, 'Usinagem', 'Carlos Silva', -3, 9, 'Parada'),
+    op(18, 'FA-018', 'Sapata de apoio', 'o-vasos', 30, 30, 'Fundição', 'Marcos Alves', -14, -4, 'Concluída'),
+    op(19, 'FA-019', 'Defletor interno', 'o-vasos', 50, 15, 'Produção', 'Fernanda Dias', -8, -2, 'Em andamento'),
+    op(20, 'FA-020', 'Gancho de içamento', 'o-torpedo', 25, 25, 'Qualidade', 'Juliana Costa', -10, 1, 'Aguardando qualidade'),
+    op(21, 'FA-021', 'Cinta de fixação', 'o-ancoragem', 600, 150, 'Produção', 'Lucas Ferreira', -2, 15, 'Em andamento'),
+    op(22, 'FA-022', 'Cabeçote de inspeção', 'o-vasos', 12, 0, 'Projetos', 'Beatriz Rocha', 0, 25, 'Aguardando material'),
+    op(23, 'FA-023', 'Grade de proteção', 'o-torpedo', 80, 80, 'Montagem', 'Lucas Ferreira', -18, -7, 'Concluída'),
+    op(24, 'FA-024', 'Mancal de rolamento', 'o-torpedo', 140, 30, 'Usinagem', 'Carlos Silva', -5, -1, 'Parada'),
   ];
 
   const materiais = [
@@ -96,10 +115,20 @@ export function dadosDemonstracao(dia = hoje()) {
     ['MAT-003', 'Parafuso M12 × 40', 'Fixadores', 1800, 500, 'un', 'OP-2026-008'],
     ['MAT-004', 'Rolamento 6205', 'Componentes', 32, 50, 'un', 'OP-2026-001'],
     ['MAT-005', 'Cabo flexível 2,5 mm', 'Elétricos', 420, 100, 'm', 'OP-2026-004'],
+    ['MAT-006', 'Rolamento 6206', 'Componentes', 12, 40, 'un', 'OP-2026-024'],
+    ['MAT-007', 'Eletrodo E7018 3,25 mm', 'Consumíveis de solda', 85, 60, 'kg', 'OP-2026-001'],
+    ['MAT-008', 'Arame MIG ER70S-6 1,0 mm', 'Consumíveis de solda', 40, 50, 'kg', 'OP-2026-014'],
+    ['MAT-009', 'Tinta epóxi cinza (galão 3,6 L)', 'Pintura', 18, 30, 'un', 'OP-2026-007'],
+    ['MAT-010', 'Diluente para epóxi (galão 5 L)', 'Pintura', 25, 10, 'un', ''],
+    ['MAT-011', 'Chapa de aço ASTM A36 6 mm', 'Metais', 1200, 400, 'kg', 'OP-2026-014'],
+    ['MAT-012', 'Tubo de aço sem costura 2"', 'Metais', 36, 20, 'm', 'OP-2026-016'],
+    ['MAT-013', 'Junta de vedação 4"', 'Componentes', 60, 40, 'un', 'OP-2026-010'],
+    ['MAT-014', 'Disco de corte 7"', 'Abrasivos', 15, 25, 'un', ''],
+    ['MAT-015', 'Porca sextavada M12', 'Fixadores', 2500, 600, 'un', 'OP-2026-021'],
   ].map(([codigo, nome, categoria, estoque, minimo, unidade, opNumero], k) => ({ id: 'm-' + k, codigo, nome, categoria, estoque, minimo, unidade, opNumero, campos: {}, ...base }));
 
   const ev = (k, opN, tipo, descricao, origem, destinatarios, prioridade, h) => ({
-    id: 'ev-' + k, em: horasAtras(h), ref: 'OP-2026-00' + opN, tipo, descricao, origem, destinatarios, prioridade, lida: false, resolvida: false,
+    id: 'ev-' + k, em: horasAtras(h), ref: 'OP-2026-' + String(opN).padStart(3, '0'), tipo, descricao, origem, destinatarios, prioridade, lida: false, resolvida: false,
     providencia: '', nota: '', statusAnterior: '', statusNovo: '', ator: 'Dados de exemplo', obraId: ops[opN - 1].obraId, itemId: null, ensaioId: null,
     opId: 'op-' + opN, faId: null, destinatarioId: null, ...base, criadoEm: horasAtras(h),
   });
@@ -113,13 +142,22 @@ export function dadosDemonstracao(dia = hoje()) {
   ];
 
   const fa = (k, titulo, descricao, obraId, opId, itemIds, setorOrigem, setorDestino, responsavelNome, prazo, status) => ({
-    id: 'fa-' + k, numero: 'FA-00' + k, titulo, descricao, obraId, opId, itemIds, setorOrigem, setorDestino, responsavelId: null, responsavelNome,
+    id: 'fa-' + k, numero: 'FA-' + String(k).padStart(3, '0'), titulo, descricao, obraId, opId, itemIds, setorOrigem, setorDestino, responsavelId: null, responsavelNome,
     prazo: D(prazo), status, concluidaEm: null, campos: {}, ...base,
   });
   const fas = [
     fa(1, 'Liberar aço carbono para a OP-2026-003', 'Reposição do MAT-001 para retomar a montagem', 'o-torpedo', 'op-3', ['i-t25'], 'PCP', 'Almoxarifado', 'Almoxarifado central', 2, 'Em andamento'),
     fa(2, 'Inspeção das soldas T-24 e T-25', 'Liberar laudos antes da montagem', 'o-torpedo', 'op-1', ['i-t24', 'i-t25'], 'Produção', 'Qualidade', 'Inspeção de soldas', -1, 'Aberta'),
     fa(3, 'Preparar pintura do aditivo (T-35)', 'Planejar a frente de pintura do pedido PED-024-02', 'o-torpedo', null, ['i-t35'], 'Projetos/Obras', 'Produção', 'Equipe de pintura', 30, 'Aberta'),
+    fa(4, 'Repor rolamentos 6205 e 6206', 'Estoque abaixo do mínimo para a OP-2026-024', 'o-torpedo', 'op-24', [], 'PCP', 'Almoxarifado', 'Almoxarifado central', 1, 'Em andamento'),
+    fa(5, 'Manutenção da fresadora CNC', 'Máquina parada; OP-2026-017 aguardando liberação', 'o-torpedo', 'op-17', [], 'Produção', 'PCP', 'Manutenção industrial', -2, 'Em andamento'),
+    fa(6, 'Liberar desenho revisado do cabeçote', 'Revisão B do desenho para iniciar a OP-2026-022', 'o-vasos', 'op-22', [], 'Produção', 'Projetos/Obras', 'Engenharia de projetos', 3, 'Aberta'),
+    fa(7, 'Inspeção final do bocal de inspeção', 'Inspeção dimensional e visual antes da expedição', 'o-vasos', 'op-13', [], 'Produção', 'Qualidade', 'Inspeção de qualidade', 2, 'Em andamento'),
+    fa(8, 'Ensaio de ultrassom VP-1 e VP-2', 'Ensaios obrigatórios antes da pintura', 'o-vasos', 'op-2', ['i-vp1', 'i-vp2'], 'Produção', 'Qualidade', 'Laboratório de ensaios', 5, 'Aberta'),
+    { ...fa(9, 'Separar chapas para reforço', 'Separar 12 chapas de 6 mm para a OP-2026-014', 'o-torpedo', 'op-14', [], 'PCP', 'Almoxarifado', 'Almoxarifado central', -3, 'Concluída'), concluidaEm: horasAtras(80) },
+    fa(10, 'Confirmar prazo do aditivo com o cliente', 'Validar a data de entrega do PED-024-02', 'o-torpedo', null, ['i-t35'], 'Projetos/Obras', 'PCP', 'Gestão de contratos', 7, 'Em andamento'),
+    fa(11, 'Retrabalho da solda do T-28', 'Laudo DEMO-LD-1235 reprovado; refazer a solda', 'o-torpedo', 'op-7', ['i-t28'], 'Qualidade', 'Produção', 'Equipe de soldagem', 4, 'Aberta'),
+    fa(12, 'Comprar tinta epóxi', 'Pedido cancelado: fornecedor substituído', 'o-torpedo', null, ['i-t35'], 'Produção', 'Almoxarifado', 'Compras', 10, 'Cancelada'),
   ];
 
   // Alertas da programação (ensaio solicitado e reprovação) e registros de auditoria dos ensaios.
@@ -138,6 +176,6 @@ export function dadosDemonstracao(dia = hoje()) {
 
   return {
     obras, pedidos, etapas, atribuicoes: [], ciclos, itens, ops, fas, materiais, eventos, auditoria, tiposEnsaio, ensaios, extras: [], efetivo,
-    config: { contadores: { fa: 3 } },
+    config: { contadores: { fa: fas.length }, demoVersao: VERSAO_DEMO },
   };
 }

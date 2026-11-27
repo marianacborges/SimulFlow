@@ -2,7 +2,7 @@
 import { autorizar, auditar } from './base.js';
 import { ehHost } from '../../core/permissoes.js';
 import { COLECOES, configPadrao, validarBackup } from '../store.js';
-import { dadosDemonstracao } from '../demo.js';
+import { dadosDemonstracao, VERSAO_DEMO } from '../demo.js';
 
 function manterUsuarios(store, novos) {
   const estado = { config: { ...configPadrao(), ...(novos.config || {}) } };
@@ -19,6 +19,28 @@ export function restaurarDemonstracao(store, u) {
   autorizar(store, u, ehHost(u), 'restaurar demonstração', {}, 'Ação exclusiva do host');
   store.substituir(manterUsuarios(store, dadosDemonstracao()));
   store.transacao(() => auditar(store, u, { acao: 'Dados de demonstração restaurados', entidade: 'sistema' }));
+}
+
+/**
+ * Ao abrir o sistema: se o navegador só tem dados de DEMONSTRAÇÃO de uma versão antiga (nenhum registro
+ * cadastrado por alguém), troca pela demonstração atual. Usuários, senhas, auditoria, tipos de ensaio
+ * (limites configurados) e políticas são mantidos. Havendo qualquer registro real, não mexe em nada.
+ * Devolve true se atualizou.
+ */
+export function atualizarDemonstracaoSePreciso(store) {
+  if (store.config.demoVersao === VERSAO_DEMO) return false;
+  const negocio = COLECOES.filter(c => !['usuarios', 'auditoria', 'tiposEnsaio'].includes(c));
+  const registros = negocio.flatMap(c => store.todos(c));
+  if (!registros.length || !registros.every(r => r.demo === true)) return false;
+  const novos = dadosDemonstracao();
+  const estado = manterUsuarios(store, novos);
+  estado.tiposEnsaio = store.todos('tiposEnsaio').length ? store.todos('tiposEnsaio') : novos.tiposEnsaio;
+  estado.config.demoVersao = VERSAO_DEMO;
+  const vistos = new Set();
+  estado.auditoria = estado.auditoria.filter(r => !vistos.has(r.id) && vistos.add(r.id));
+  estado.auditoria.push({ id: 'au-demo-v' + VERSAO_DEMO, em: new Date().toISOString(), atorId: null, ator: 'Sistema', acao: 'Demonstração atualizada (mais OPs, FAs e materiais)', entidade: 'sistema', entidadeId: null, obraId: null, antes: null, depois: null, nota: 'Só dados de demonstração foram substituídos', turno: '', criadoEm: new Date().toISOString() });
+  store.substituir(estado);
+  return true;
 }
 
 /** Apaga os dados de negócio (obras, OPs, FAs…) mantendo usuários e auditoria. */

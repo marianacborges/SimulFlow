@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 
 export async function executar(raiz) {
   const mod = rel => import(pathToFileURL(path.join(raiz, rel)).href);
-  const { definirConfig } = await mod('js/core/config.js');
+  const { definirConfig, config } = await mod('js/core/config.js');
   definirConfig({
     app: JSON.parse(fs.readFileSync(path.join(raiz, 'config/app.json'), 'utf8')),
     abas: JSON.parse(fs.readFileSync(path.join(raiz, 'config/abas.json'), 'utf8')),
@@ -178,7 +178,7 @@ export async function executar(raiz) {
   t('FA: numeração automática, observação obrigatória e notificação ao destino', () => {
     const { store, acoes } = novoStore();
     const fa = acoes.fas.salvarFA({ titulo: 'Teste', setorOrigem: 'PCP', setorDestino: 'Qualidade', responsavelNome: 'Z', prazo: D(3), obraId: 'o-torpedo', itemIds: ['i-t24'] });
-    assert.equal(fa.numero, 'FA-004');
+    assert.equal(fa.numero, 'FA-013');
     assert.ok(store.todos('eventos').some(e => e.faId === fa.id && e.destinatarios.includes('Qualidade')));
     assert.throws(() => acoes.fas.statusFA({ id: fa.id, status: 'Concluída', nota: '' }), /observação/);
     acoes.fas.statusFA({ id: fa.id, status: 'Em andamento', nota: 'iniciado' });
@@ -194,6 +194,58 @@ export async function executar(raiz) {
     const v = montarPainel(d, { ...f, inicio: D(-30), fim: D(60) });
     assert.equal(v.indicadores.length, 5);
     assert.ok(Number(v.indicadores[3].valor) >= 1);
+  });
+
+  // ---- Demonstração ----
+  const { atualizarDemonstracaoSePreciso } = await mod('js/data/acoes/dados.js');
+  const { VERSAO_DEMO } = await mod('js/data/demo.js');
+  t('demonstração: 3 obras, 24 OPs, 12 FAs e 15 materiais coerentes com a configuração', () => {
+    const d = dadosDemonstracao();
+    assert.equal(d.obras.length, 3);
+    assert.equal(d.ops.length, 24);
+    assert.equal(d.fas.length, 12);
+    assert.equal(d.materiais.length, 15);
+    for (const [col, campo] of [['ops', 'numero'], ['fas', 'numero'], ['materiais', 'codigo'], ['ops', 'id'], ['fas', 'id'], ['eventos', 'id'], ['auditoria', 'id']]) {
+      const v = d[col].map(r => r[campo]);
+      assert.equal(new Set(v).size, v.length, `${col}.${campo} repetido`);
+    }
+    assert.ok(d.ops.every(o => /^OP-2026-\d{3}$/.test(o.numero) && d.obras.some(x => x.id === o.obraId) && config.app.setoresOP.includes(o.setor) && config.app.statusOP.includes(o.status)));
+    assert.ok(d.fas.every(f => /^FA-\d{3}$/.test(f.numero) && (!f.opId || d.ops.some(o => o.id === f.opId)) && f.itemIds.every(id => d.itens.some(i => i.id === id))
+      && config.app.areas.includes(f.setorOrigem) && config.app.areas.includes(f.setorDestino) && config.app.statusFA.includes(f.status)));
+    assert.ok(d.materiais.every(m => config.app.unidadesMaterial.includes(m.unidade) && (!m.opNumero || d.ops.some(o => o.numero === m.opNumero))));
+    assert.ok(d.eventos.every(e => !e.opId || d.ops.some(o => o.id === e.opId && o.numero === e.ref)));
+    assert.equal(d.config.contadores.fa, 12);
+    assert.ok(d.ops.some(o => R.opAtrasada(o)) && d.fas.some(f => R.faAtrasada(f)) && d.materiais.filter(m => m.estoque < m.minimo).length >= 4);
+  });
+  t('demonstração antiga é trocada pela nova só quando o navegador tem apenas dados de demonstração', () => {
+    const antiga = () => {
+      const st = criarStore(criarAdaptadorMemoria()); st.carregar();
+      const d = dadosDemonstracao(); delete d.config.demoVersao; d.ops = d.ops.slice(0, 8); d.fas = d.fas.slice(0, 3); d.materiais = d.materiais.slice(0, 5);
+      d.tiposEnsaio[0].limites.solicitado = 12; // limite configurado pelo host: deve ser mantido
+      d.usuarios = [{ id: 'u1', login: 'host', nome: 'Host', host: true, ativo: true, credencial: { hash: 'x' } }];
+      st.substituir(d);
+      return st;
+    };
+    const st = antiga();
+    assert.equal(atualizarDemonstracaoSePreciso(st), true);
+    assert.equal(st.todos('ops').length, 24);
+    assert.equal(st.todos('fas').length, 12);
+    assert.equal(st.todos('materiais').length, 15);
+    assert.equal(st.todos('usuarios')[0].login, 'host');
+    assert.equal(st.todos('tiposEnsaio')[0].limites.solicitado, 12);
+    assert.equal(st.config.demoVersao, VERSAO_DEMO);
+    const ids = st.todos('auditoria').map(a => a.id);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.equal(atualizarDemonstracaoSePreciso(st), false, 'não repete');
+    // Com um cadastro real, não mexe.
+    const real = antiga();
+    real.transacao(s => s.inserir('ops', { numero: 'OP-REAL-1', produto: 'Cadastro real' }));
+    assert.equal(atualizarDemonstracaoSePreciso(real), false);
+    assert.equal(real.todos('ops').length, 9);
+    // Depois de "Limpar dados" (sem registros), não volta a demonstração.
+    const vazio = criarStore(criarAdaptadorMemoria()); vazio.carregar(); vazio.substituir({ usuarios: [{ id: 'u1', host: true, ativo: true }] });
+    assert.equal(atualizarDemonstracaoSePreciso(vazio), false);
+    assert.equal(vazio.todos('ops').length, 0);
   });
 
   // ---- Filtros do topo do Dashboard (Período, Operação, Status) ----

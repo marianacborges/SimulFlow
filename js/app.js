@@ -5,6 +5,7 @@ import { criarAdaptadorLocal } from './data/adapters/local.js';
 import { aoPoderInstalar, instalarApp } from './core/instalar.js';
 import { criarAcoes } from './data/acoes/index.js';
 import { dadosDemonstracao } from './data/demo.js';
+import { atualizarDemonstracaoSePreciso } from './data/acoes/dados.js';
 import * as auth from './core/auth.js';
 import { pode, regrasAcesso, ehHost } from './core/permissoes.js';
 import { criarRoteador } from './core/router.js';
@@ -45,6 +46,7 @@ async function iniciar() {
   store = criarStore(criarAdaptadorLocal());
   const existia = store.carregar();
   if (!existia) await primeiraCarga();
+  else atualizarDemonstracaoSePreciso(store);
   acoes = criarAcoes(store, usuarioAtual);
   store.adaptador.observarExterno(() => store.recarregar());
   store.assinar(() => {
