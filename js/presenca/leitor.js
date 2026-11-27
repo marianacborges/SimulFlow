@@ -7,12 +7,16 @@ export function normalizarTag(codigo) {
   return String(codigo ?? '').trim().replace(/:/g, '').toUpperCase();
 }
 
-/** Texto gravado na tag (registro NDEF do tipo texto, ex.: gravado pelo app NFC Tools). '' se não houver. */
+/**
+ * Texto gravado na tag. '' se não houver. Aceita o registro "Texto" do NFC Tools (tipo text) e também
+ * "Dados personalizados" com tipo de conteúdo text/plain (tipo mime).
+ */
 export function textoDaTag(mensagem) {
   for (const r of mensagem?.records || []) {
-    if (r.recordType !== 'text' || !r.data) continue;
+    const ehTexto = r.recordType === 'text' || (r.recordType === 'mime' && /^text\//i.test(r.mediaType || ''));
+    if (!ehTexto || !r.data) continue;
     try {
-      const t = new TextDecoder(r.encoding || 'utf-8').decode(r.data).trim();
+      const t = new TextDecoder(r.recordType === 'text' ? r.encoding || 'utf-8' : 'utf-8').decode(r.data).trim();
       if (t) return t.slice(0, 300);
     } catch { /* codificação desconhecida: ignora o registro */ }
   }
