@@ -80,7 +80,7 @@ arquivo único `dist/simulflow.html` aberto por `file://`.
 | NAV-10 | ➖ | Rodapé removido de todas as abas, a pedido |
 | NAV-11 | ✅ | “Acesso não autorizado” dentro do shell |
 | NAV-12 | ✅ | Busca sem acento/maiúsculas, vários termos (`combinaTexto`) |
-| AUT-01 | 🔁 | Login por **usuário** (o host é `simulflow2-40@gmail.com`); olho para mostrar senha |
+| AUT-01 | 🔁 | Login por **usuário** (o host escolhe o seu no primeiro acesso); olho para mostrar senha |
 | AUT-02 | ➖ | Sem e-mail; o host define senha provisória |
 | AUT-03 | 🔁 | Tela “Definir nova senha” obrigatória após senha provisória, com olho |
 | AUT-04 | 🔁 | Link de convite → senha provisória definida pelo host |

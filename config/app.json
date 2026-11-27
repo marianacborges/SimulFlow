@@ -3,7 +3,6 @@
   "subtitulo": "SIMULTANEOUS PRODUCTION TRACKING",
   "descricao": "Acompanhamento de OPs e FAs entre PCP, Produção, Projetos/Obras, Almoxarifado e Qualidade",
   "versao": "2.0.0",
-  "hostLoginPadrao": "simulflow2-40@gmail.com",
   "areas": ["PCP", "Produção", "Projetos/Obras", "Almoxarifado", "Qualidade"],
   "abasDaArea": {
     "PCP": ["pcp", "presenca"],

@@ -133,7 +133,7 @@ function telaAcesso(conteudo, aoEnviar) {
 function telaCriarHost() {
   telaAcesso(html`<h1>Primeiro acesso</h1><p class="muted">Crie o usuário host (administrador). Ele cadastra os demais usuários, senhas e áreas de acesso.</p>
     <form class="auth-form" novalidate>
-      ${campo('Usuário (login)', html`<input name="login" required autocomplete="username" value="${config.app.hostLoginPadrao || ''}">`)}
+      ${campo('Usuário (login)', html`<input name="login" required autocomplete="username">`)}
       ${campo('Nome', html`<input name="nome" required autocomplete="name" maxlength="100">`)}
       ${campoSenha('senha', 'Senha', 'new-password')}${campoSenha('confirmacao', 'Confirmar senha', 'new-password')}
       <p role="alert" class="error"></p><button class="btn primario full" type="submit">Criar host e entrar</button>
